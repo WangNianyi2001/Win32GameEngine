@@ -144,12 +144,14 @@
     <ClInclude Include="animation.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="paintable.h" />
+    <ClInclude Include="scene.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="sprite.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="paintable.cpp" />
+    <ClCompile Include="scene.cpp" />
     <ClCompile Include="window.cpp" />
     <ClCompile Include="sprite.cpp" />
     <ClCompile Include="texture.cpp" />
