@@ -1,6 +1,8 @@
 #include <windows.h>
 #include "texture.h"
 
+using namespace Win32GameEngine;
+
 Layer::Layer(Int2 size) :
 	hdc(CreateCompatibleDC(GetDC(NULL))),
 	size(size) {

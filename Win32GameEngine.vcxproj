@@ -146,7 +146,6 @@
     <ClInclude Include="paintable.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="sprite.h" />
-    <ClInclude Include="text.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="animation.cpp" />

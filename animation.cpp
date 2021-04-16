@@ -1,5 +1,7 @@
 #include "animation.h"
 
+using namespace Win32GameEngine;
+
 Animation::Animation(vector<Frame> frames, bool loop, function<void(Animation *)> onEnd) :
 	loop(loop), onEnd(onEnd)
 {
