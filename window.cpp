@@ -2,8 +2,6 @@
 
 using namespace Win32GameEngine;
 
-// Window
-
 HWND Window::createWindow(InitArg const &args) {
 	WNDCLASSEX classex = {
 		.cbSize = sizeof(WNDCLASSEX),
@@ -34,11 +32,11 @@ Window::Window(HINSTANCE hInstance, InitArg const args) :
 {}
 
 int Window::run() {
-	this->hWnd = createWindow(args);
-	if(!this->hWnd)
+	hWnd = createWindow(args);
+	if(!hWnd)
 		return FALSE;
-	ShowWindow(this->hWnd, SW_SHOW);
-	UpdateWindow(this->hWnd);
+	ShowWindow(hWnd, SW_SHOW);
+	UpdateWindow(hWnd);
 	MSG *message = new MSG;
 	while(GetMessage(message, nullptr, 0, 0)) {
 		TranslateMessage(message);
@@ -47,14 +45,13 @@ int Window::run() {
 	return message->wParam;
 }
 
-// EventHandler
-
-std::map<UINT, std::set<EventHandler::Handler>> EventHandler::handlers{};
+Win32GameEngine::EventHandler::EventHandler(map<UINT, set<Handler>> handlers) :
+	handlers(handlers)
+{}
 
 LRESULT CALLBACK EventHandler::operator()(
 	HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam
 ) {
-	this->hWnd = hWnd;
 	auto &handlers = EventHandler::handlers;
 	if(!handlers.count(type))
 		return DefWindowProc(hWnd, type, wParam, lParam);
@@ -65,12 +62,12 @@ LRESULT CALLBACK EventHandler::operator()(
 }
 
 void EventHandler::addHandler(UINT type, Handler handler) {
-	if(!this->handlers.count(type))
-		this->handlers.insert(std::pair(type, std::set<Handler>()));
-	this->handlers[type].insert(handler);
+	if(!handlers.count(type))
+		handlers.insert(std::pair(type, std::set<Handler>()));
+	handlers[type].insert(handler);
 }
 
-LRESULT EventHandler::defaultDestroyHandler(HWND, WPARAM, LPARAM) {
+LRESULT Win32GameEngine::defaultDestroyHandler(HWND, WPARAM, LPARAM) {
 	PostQuitMessage(0);
 	return 0;
 }

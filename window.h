@@ -10,6 +10,8 @@
 #include <functional>
 
 namespace Win32GameEngine {
+	using namespace std;
+
 	class Window {
 	public:
 		struct InitArg {
@@ -34,16 +36,15 @@ namespace Win32GameEngine {
 		Window(HINSTANCE hInstance, InitArg const args);
 		int run();
 	};
-	class EventHandler {
-	public:
+
+	struct EventHandler {
 		using Handler = LRESULT(*)(HWND, WPARAM, LPARAM);
-	private:
-		HWND hWnd;
-		static std::map<UINT, std::set<Handler>> handlers;
-	public:
+		map<UINT, set<Handler>> handlers;
 		EventHandler() = default;
+		EventHandler(map<UINT, set<Handler>> handlers);
 		LRESULT CALLBACK operator()(HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam);
 		void addHandler(UINT type, Handler handler);
-		static LRESULT defaultDestroyHandler(HWND, WPARAM, LPARAM);
 	};
+	
+	LRESULT defaultDestroyHandler(HWND, WPARAM, LPARAM);
 }
