@@ -29,6 +29,7 @@ namespace Win32GameEngine {
 		Int2 size, anchor;
 		Layer *foreground, *mask, *invert_mask;
 		bool visible;
+		Texture() = default;
 		Texture(
 			Int2 size, Int2 anchor,
 			Layer *foreground, Layer *mask = nullptr

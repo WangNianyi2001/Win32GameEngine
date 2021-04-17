@@ -17,12 +17,12 @@ Win32GameEngine::Scene::Scene(
 	(*all)[name] = this;
 }
 
-bool Scene::switchTo(char const *name, HWND hWnd, void *args) {
+bool Scene::switchTo(char const *name, HWND hWnd, void *arg) {
 	if(!Scene::all->count(name))
 		return false;
 	Scene *scene = (*Scene::all)[name];
 	Scene::active = scene;
-	(*scene->init)(hWnd, args);
+	(*scene->init)(hWnd, arg);
 	return true;
 }
 

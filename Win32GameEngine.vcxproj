@@ -146,6 +146,8 @@
     <ClInclude Include="engine.h" />
     <ClInclude Include="paintable.h" />
     <ClInclude Include="scene.h" />
+    <ClInclude Include="sound.h" />
+    <ClInclude Include="texture.h" />
     <ClInclude Include="window.h" />
     <ClInclude Include="sprite.h" />
   </ItemGroup>
@@ -153,6 +155,7 @@
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="paintable.cpp" />
     <ClCompile Include="scene.cpp" />
+    <ClCompile Include="sound.cpp" />
     <ClCompile Include="window.cpp" />
     <ClCompile Include="sprite.cpp" />
     <ClCompile Include="texture.cpp" />

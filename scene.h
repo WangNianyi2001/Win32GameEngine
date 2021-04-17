@@ -16,6 +16,6 @@ namespace Win32GameEngine {
 		EventHandler event_handler;
 		Scene(char const *name, void (*init)(HWND, void *), map<UINT, set<EventHandler::Handler>> handlers = {});
 		static LRESULT passEvent(HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam);
-		static bool switchTo(char const *name, HWND hWnd, void *args);
+		static bool switchTo(char const *name, HWND hWnd, void *);
 	};
 }
