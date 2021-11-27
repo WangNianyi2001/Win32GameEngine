@@ -23,9 +23,10 @@ void EventDistributor::add(UINT type, Handler handler) {
 Window::HWndMap Window::hwnd_map = HWndMap();
 
 LRESULT Window::event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
-	if(Window::hwnd_map.find(hWnd) == Window::hwnd_map.end())
+	auto it = Window::hwnd_map.find(hWnd);
+	if(it == Window::hwnd_map.end())
 		return DefWindowProc(hWnd, type, w, l);
-	return Window::hwnd_map[hWnd]->event_distributor(hWnd, type, w, l);
+	return it->second->event_distributor(hWnd, type, w, l);
 }
 
 Window::Window(InitArg const args) {
