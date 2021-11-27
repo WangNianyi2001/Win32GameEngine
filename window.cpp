@@ -28,31 +28,33 @@ LRESULT Window::event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
 	return Window::hwnd_map[hWnd]->event_distributor(hWnd, type, w, l);
 }
 
-Window::Window(InitArg const init_args) : init_args(init_args) {
+Window::Window(InitArg const args) {
 	WNDCLASS window_class = {
-		.style = init_args.class_style,
+		.style = args.class_style,
 		.lpfnWndProc = &Window::event_processor,
 		.cbClsExtra = 0,
 		.cbWndExtra = 0,
-		.hInstance = init_args.instance,
-		.hIcon = init_args.icon,
-		.hCursor = init_args.cursor,
-		.hbrBackground = init_args.background_brush,
-		.lpszMenuName = init_args.menu_name,
-		.lpszClassName = init_args.class_name,
+		.hInstance = args.instance,
+		.hIcon = args.icon,
+		.hCursor = args.cursor,
+		.hbrBackground = args.background_brush,
+		.lpszMenuName = args.menu_name,
+		.lpszClassName = args.class_name,
 	};
 	RegisterClass(&window_class);
 	hWnd = CreateWindow(
-		init_args.class_name, init_args.title, init_args.style,
-		init_args.x, init_args.y,
-		init_args.width, init_args.height,
+		args.class_name, args.title, args.style,
+		args.x, args.y,
+		args.width, args.height,
 		nullptr, nullptr, nullptr, nullptr
 	);
 }
 
-int Window::activate() {
-	if(!hWnd)
-		return 0;
+bool Window::ready() {
+	return hWnd;
+}
+
+WPARAM Window::activate() {
 	hwnd_map.insert(pair(hWnd, this));
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);

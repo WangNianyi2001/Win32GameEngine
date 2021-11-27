@@ -35,7 +35,13 @@ namespace Win32GameEngine {
 	};
 
 	class Window {
+		static LRESULT CALLBACK event_processor(HWND, UINT, WPARAM, LPARAM);
+		using HWndMap = map<HWND, Window *>;
+		static HWndMap hwnd_map;
+	private:
+		HWND hWnd;
 	public:
+		EventDistributor event_distributor;
 		struct InitArg {
 			LPCWSTR class_name;
 			HINSTANCE instance = nullptr;
@@ -49,16 +55,9 @@ namespace Win32GameEngine {
 			int width = 640, height = 480;
 			DWORD style = WS_OVERLAPPEDWINDOW;
 		};
-	private:
-		InitArg const init_args;
-		HWND hWnd;
-		static LRESULT CALLBACK event_processor(HWND, UINT, WPARAM, LPARAM);
-		using HWndMap = map<HWND, Window *>;
-		static HWndMap hwnd_map;
-	public:
-		EventDistributor event_distributor;
 		Window(InitArg const init_args);
-		int activate();
+		bool ready();
+		WPARAM activate();
 	};
 	
 	LRESULT defaultDestroyHandler(HWND, WPARAM, LPARAM);
