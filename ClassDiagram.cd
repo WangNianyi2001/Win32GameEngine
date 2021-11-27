@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Win32GameEngine::Window">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="Win32GameEngine::Window::InitArg" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>window.hpp</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAQAAAAAAAAAAYAAAAAAAAAAAgAIADAAAAAA=</HashCode>
+      <FileName>window.hpp</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="event_distributor" />
+    </ShowAsAssociation>
+  </Class>
+  <Struct Name="Win32GameEngine::EventDistributor">
+    <Position X="3.5" Y="0.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAKAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAA=</HashCode>
+      <FileName>window.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
