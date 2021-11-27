@@ -12,6 +12,9 @@
     <ClInclude Include="win32ge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="win32gecore.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

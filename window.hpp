@@ -1,24 +1,12 @@
 #pragma once
 
-#include <windows.h>
+#include "win32gecore.hpp"
 #include <map>
 #include <set>
 #include <functional>
 
 namespace Win32GameEngine {
 	using namespace std;
-
-	template<typename T>
-	struct UltraCompare {
-		bool operator()(const T &a, const T &b) const {
-			auto pa = (unsigned char *)&a, pb = (unsigned char *)&b;
-			for(unsigned l = sizeof(T); l--; ) {
-				if(*pa < *pb)
-					return true;
-			}
-			return false;
-		}
-	};
 
 	struct EventDistributor {
 		using Handler = function<LRESULT(HWND, WPARAM, LPARAM)>;
