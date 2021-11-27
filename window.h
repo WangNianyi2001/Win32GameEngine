@@ -1,7 +1,6 @@
 #pragma once
 
 #pragma warning(disable:4302)
-#pragma warning(disable:4244)
 #define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
@@ -12,38 +11,54 @@
 namespace Win32GameEngine {
 	using namespace std;
 
+	template<typename T>
+	struct UltraCompare {
+		bool operator()(const T &a, const T &b) const {
+			auto pa = (unsigned char *)&a, pb = (unsigned char *)&b;
+			for(unsigned l = sizeof(T); l--; ) {
+				if(*pa < *pb)
+					return true;
+			}
+			return false;
+		}
+	};
+
+	struct EventDistributor {
+		using Handler = function<LRESULT(HWND, WPARAM, LPARAM)>;
+		using TypedHandlers = set<Handler, UltraCompare<Handler>>;
+		using HandlerMap = map<UINT, TypedHandlers>;
+		HandlerMap handler_map;
+		EventDistributor() = default;
+		EventDistributor(HandlerMap handlers);
+		LRESULT CALLBACK operator()(HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam);
+		void add(UINT type, Handler handler);
+	};
+
 	class Window {
 	public:
 		struct InitArg {
 			LPCWSTR class_name;
-			LPCWSTR title;
+			HINSTANCE instance = nullptr;
+			LPCWSTR title = nullptr;
 			UINT class_style = CS_HREDRAW | CS_VREDRAW;
-			HICON icon = NULL, icon_small = NULL;
-			HCURSOR cursor = LoadCursor(nullptr, IDC_ARROW);
-			HBRUSH background_brush = (HBRUSH)(COLOR_WINDOW + 1);
-			LPCWSTR menu_name = MAKEINTRESOURCE(IDC_ICON);
+			HICON icon = nullptr, icon_small = nullptr;
+			HCURSOR cursor = nullptr;
+			HBRUSH background_brush = nullptr;
+			LPCWSTR menu_name = nullptr;
 			int x = 0, y = 0;
 			int width = 640, height = 480;
 			DWORD style = WS_OVERLAPPEDWINDOW;
-			WNDPROC event_processor;
 		};
 	private:
-		HINSTANCE const hInstance;
-		HWND createWindow(InitArg const &args);
-		InitArg args;
-	public:
+		InitArg const init_args;
 		HWND hWnd;
-		Window(HINSTANCE hInstance, InitArg const args);
-		int run();
-	};
-
-	struct EventHandler {
-		using Handler = LRESULT(*)(HWND, WPARAM, LPARAM);
-		map<UINT, set<Handler>> handlers;
-		EventHandler() = default;
-		EventHandler(map<UINT, set<Handler>> handlers);
-		LRESULT CALLBACK operator()(HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam);
-		void addHandler(UINT type, Handler handler);
+		static LRESULT CALLBACK event_processor(HWND, UINT, WPARAM, LPARAM);
+		using HWndMap = map<HWND, Window *>;
+		static HWndMap hwnd_map;
+	public:
+		EventDistributor event_distributor;
+		Window(InitArg const init_args);
+		int activate();
 	};
 	
 	LRESULT defaultDestroyHandler(HWND, WPARAM, LPARAM);
