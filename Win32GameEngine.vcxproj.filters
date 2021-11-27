@@ -6,7 +6,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="window.h">
+    <ClInclude Include="window.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win32ge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

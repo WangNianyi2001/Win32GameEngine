@@ -1,4 +1,4 @@
-#include "window.h"
+#include "window.hpp"
 
 using namespace Win32GameEngine;
 using namespace std;
