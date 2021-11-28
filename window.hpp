@@ -15,14 +15,20 @@ namespace Win32GameEngine {
 		virtual Out operator()(In ...args) = 0;
 	};
 
-	template<typename Out, typename ...In>
-	struct Handler : EventReceiver<Out, In ...> {
-		using Function = function<Out(In ...)>;
-		Function const f;
+	template<typename Function, typename Out, typename ...In>
+	struct EventReceiverWrapper : EventReceiver<Out, In ...> {
+		Function f;
 		virtual Out operator()(In ...args) {
 			return f(args...);
 		}
-		Handler(Function f) : f(f) {}
+		EventReceiverWrapper(Function f) : f(f) {}
+	};
+
+	template<typename Out, typename ...In>
+	struct Handler : EventReceiverWrapper<function<Out(In ...)>, Out, In ...> {
+		using EventReceiverWrapper<
+			function<Out(In ...)>, Out, In ...
+		>::EventReceiverWrapper;
 	};
 
 	using PureHandler = Handler<LRESULT, HWND, WPARAM, LPARAM>;
@@ -39,6 +45,29 @@ namespace Win32GameEngine {
 		Next const next;
 		virtual Out operator()(In ...args) = 0;
 		EventMedium(Next next) : next(next) {}
+	};
+
+	struct PaintMedium : EventMedium<
+		EventReceiver<void, HDC> *,
+		LRESULT, HWND, WPARAM, LPARAM
+	> {
+		using EventMedium<
+			EventReceiver<void, HDC> *,
+			LRESULT, HWND, WPARAM, LPARAM
+		>::EventMedium;
+		virtual LRESULT operator()(HWND hWnd, WPARAM, LPARAM) {
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(hWnd, &ps);
+			next->operator()(hdc);
+			EndPaint(hWnd, &ps);
+			return 0;
+		}
+	};
+
+	struct Painter : EventReceiverWrapper<PaintMedium, LRESULT, HWND, WPARAM, LPARAM> {
+		Painter(function<void(HDC)> f) : EventReceiverWrapper<PaintMedium, LRESULT, HWND, WPARAM, LPARAM>(
+			PaintMedium(new Handler<void, HDC>{ f })
+		) { }
 	};
 
 	struct EventDistributor : EventReceiver<LRESULT, HWND, Event, WPARAM, LPARAM> {
