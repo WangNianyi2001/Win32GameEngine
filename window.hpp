@@ -8,19 +8,51 @@
 namespace Win32GameEngine {
 	using namespace std;
 
-	struct EventDistributor {
-		using Handler = function<LRESULT(HWND, WPARAM, LPARAM)>;
-		using TypedHandlers = set<Handler, UltraCompare<Handler>>;
-		using HandlerMap = map<UINT, TypedHandlers>;
-		HandlerMap handler_map;
+	using Event = UINT;
+
+	template<typename Out, typename ...In>
+	struct EventReceiver {
+		virtual Out operator()(In ...args) = 0;
+	};
+
+	template<typename Out, typename ...In>
+	struct Handler : EventReceiver<Out, In ...> {
+		using Function = function<Out(In ...)>;
+		Function const f;
+		virtual Out operator()(In ...args) {
+			return f(args...);
+		}
+		Handler(Function f) : f(f) {}
+	};
+
+	using PureHandler = Handler<LRESULT, HWND, WPARAM, LPARAM>;
+	
+	static PureHandler *defaultDestroy = new PureHandler{
+		[](HWND, WPARAM, LPARAM) {
+			PostQuitMessage(0);
+			return (LRESULT)0;
+		}
+	};
+
+	template<typename Next, typename Out, typename ...In>
+	struct EventMedium : EventReceiver<Out, In ...> {
+		Next const next;
+		virtual Out operator()(In ...args) = 0;
+		EventMedium(Next next) : next(next) {}
+	};
+
+	struct EventDistributor : EventReceiver<LRESULT, HWND, Event, WPARAM, LPARAM> {
+		using Receiver = EventReceiver<LRESULT, HWND, WPARAM, LPARAM>;
+		template<typename T>
+		using Container = map<Event, set<T>>;
+		Container<Receiver *> receivers;
 		EventDistributor() = default;
-		EventDistributor(HandlerMap handlers);
-		LRESULT CALLBACK operator()(HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam);
-		void add(UINT type, Handler handler);
+		virtual LRESULT operator()(HWND hWnd, Event type, WPARAM w, LPARAM l);
+		void add(Event type, Receiver *receiver);
 	};
 
 	class Window {
-		static LRESULT CALLBACK event_processor(HWND, UINT, WPARAM, LPARAM);
+		static LRESULT CALLBACK event_processor(HWND, Event, WPARAM, LPARAM);
 		using HWndMap = map<HWND, Window *>;
 		static HWndMap hwnd_map;
 	private:
@@ -44,6 +76,4 @@ namespace Win32GameEngine {
 		bool ready();
 		WPARAM activate();
 	};
-	
-	LRESULT defaultDestroyHandler(HWND, WPARAM, LPARAM);
 }

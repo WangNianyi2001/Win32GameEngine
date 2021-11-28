@@ -3,26 +3,26 @@
 using namespace Win32GameEngine;
 using namespace std;
 
-EventDistributor::EventDistributor(HandlerMap handler_map) : handler_map(handler_map) {}
-
-LRESULT CALLBACK EventDistributor::operator()(
-	HWND hWnd, UINT type, WPARAM wParam, LPARAM lParam
+LRESULT EventDistributor::operator()(
+	HWND hWnd, Event type, WPARAM w, LPARAM l
 ) {
-	if(!handler_map.count(type))
-		return DefWindowProc(hWnd, type, wParam, lParam);
+	auto it = receivers.find(type);
+	if(it == receivers.end())
+		return DefWindowProc(hWnd, type, w, l);
+	auto typed = it->second;
 	LRESULT res = 0;
-	for(Handler const handler : handler_map[type])
-		res |= handler(hWnd, wParam, lParam);
+	for(Receiver *receiver : typed)
+		res |= receiver->operator()(hWnd, w, l);
 	return res;
 }
 
-void EventDistributor::add(UINT type, Handler handler) {
-	handler_map[type].insert(handler);
+void EventDistributor::add(Event type, Receiver *receiver) {
+	receivers[type].insert(receiver);
 }
 
 Window::HWndMap Window::hwnd_map = HWndMap();
 
-LRESULT Window::event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
+LRESULT Window::event_processor(HWND hWnd, Event type, WPARAM w, LPARAM l) {
 	auto it = Window::hwnd_map.find(hWnd);
 	if(it == Window::hwnd_map.end())
 		return DefWindowProc(hWnd, type, w, l);
@@ -65,9 +65,4 @@ WPARAM Window::activate() {
 		DispatchMessage(&message);
 	}
 	return message.wParam;
-}
-
-LRESULT Win32GameEngine::defaultDestroyHandler(HWND, WPARAM, LPARAM) {
-	PostQuitMessage(0);
-	return 0;
 }

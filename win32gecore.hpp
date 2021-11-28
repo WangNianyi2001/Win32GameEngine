@@ -17,17 +17,3 @@
 	_In_ PWSTR pCmdLine,\
 	_In_ int nCmdShow\
 )
-
-namespace Win32GameEngine {
-	template<typename T>
-	struct UltraCompare {
-		bool operator()(T const &a, T const &b) const {
-			auto pa = (unsigned char *)&a, pb = (unsigned char *)&b;
-			for(unsigned l = sizeof(T); l--; ) {
-				if(pa[l] < pb[l])
-					return true;
-			}
-			return false;
-		}
-	};
-}
