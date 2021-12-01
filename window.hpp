@@ -1,51 +1,18 @@
 #pragma once
 
-#include "win32gecore.hpp"
-#include <map>
-#include <set>
-#include <functional>
+#include <windows.h>
+#include "event.hpp"
+#include "gameobject.hpp"
 
 namespace Win32GameEngine {
 	using namespace std;
 
-	using Event = UINT;
+	using RawHandler = Handler<LRESULT, HWND, WPARAM, LPARAM>;
 
-	template<typename Out, typename ...In>
-	struct EventReceiver {
-		virtual Out operator()(In ...args) = 0;
-	};
-
-	template<typename Function, typename Out, typename ...In>
-	struct EventReceiverWrapper : EventReceiver<Out, In ...> {
-		Function f;
-		virtual Out operator()(In ...args) {
-			return f(args...);
-		}
-		EventReceiverWrapper(Function f) : f(f) {}
-	};
-
-	template<typename Out, typename ...In>
-	struct Handler : EventReceiverWrapper<function<Out(In ...)>, Out, In ...> {
-		using EventReceiverWrapper<
-			function<Out(In ...)>, Out, In ...
-		>::EventReceiverWrapper;
-	};
-
-	using PureHandler = Handler<LRESULT, HWND, WPARAM, LPARAM>;
-	
-	static PureHandler *defaultDestroy = new PureHandler{
-		[](HWND, WPARAM, LPARAM) {
-			PostQuitMessage(0);
-			return (LRESULT)0;
-		}
-	};
-
-	template<typename Next, typename Out, typename ...In>
-	struct EventMedium : EventReceiver<Out, In ...> {
-		Next const next;
-		virtual Out operator()(In ...args) = 0;
-		EventMedium(Next next) : next(next) {}
-	};
+	static RawHandler *defaultDestroy = new RawHandler{ [](HWND, WPARAM, LPARAM) {
+		PostQuitMessage(0);
+		return (LRESULT)0;
+	} };
 
 	struct PaintMedium : EventMedium<
 		EventReceiver<void, HDC> *,
@@ -55,7 +22,7 @@ namespace Win32GameEngine {
 			EventReceiver<void, HDC> *,
 			LRESULT, HWND, WPARAM, LPARAM
 		>::EventMedium;
-		virtual LRESULT operator()(HWND hWnd, WPARAM, LPARAM) {
+		virtual LRESULT operator()(HWND hWnd, WPARAM, LPARAM) override {
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
 			next->operator()(hdc);
@@ -65,44 +32,68 @@ namespace Win32GameEngine {
 	};
 
 	struct Painter : EventReceiverWrapper<PaintMedium, LRESULT, HWND, WPARAM, LPARAM> {
-		Painter(function<void(HDC)> f) : EventReceiverWrapper<PaintMedium, LRESULT, HWND, WPARAM, LPARAM>(
-			PaintMedium(new Handler<void, HDC>{ f })
-		) { }
+		Painter(function<void(HDC)> f) : EventReceiverWrapper<
+			PaintMedium, LRESULT, HWND, WPARAM, LPARAM
+		>(PaintMedium(new Handler<void, HDC>{ f })) {}
 	};
 
-	struct EventDistributor : EventReceiver<LRESULT, HWND, Event, WPARAM, LPARAM> {
-		using Receiver = EventReceiver<LRESULT, HWND, WPARAM, LPARAM>;
-		template<typename T>
-		using Container = map<Event, set<T>>;
-		Container<Receiver *> receivers;
-		EventDistributor() = default;
-		virtual LRESULT operator()(HWND hWnd, Event type, WPARAM w, LPARAM l);
-		void add(Event type, Receiver *receiver);
-	};
+	using String = LPTSTR;
+	using ConstString = LPCTSTR;
 
-	class Window {
-		static LRESULT CALLBACK event_processor(HWND, Event, WPARAM, LPARAM);
+	class Window : public GameObject {
+		static LRESULT CALLBACK event_processor(HWND, RawEvent, WPARAM, LPARAM);
 		using HWndMap = map<HWND, Window *>;
-		static HWndMap hwnd_map;
+		inline static HWndMap hwnd_map = HWndMap();
 	private:
 		HWND hWnd;
 	public:
-		EventDistributor event_distributor;
+		struct Distributor : public EventDistributor<
+			RawEvent,
+			EventReceiver<LRESULT, HWND, WPARAM, LPARAM>,
+			LRESULT, HWND, RawEvent, WPARAM, LPARAM
+		> {
+			virtual LRESULT operator()(HWND hWnd, RawEvent type, WPARAM w, LPARAM l) override {
+				auto it = receivers.find(type);
+				if(it == receivers.end())
+					return DefWindowProc(hWnd, type, w, l);
+				auto typed = it->second;
+				LRESULT res = 0;
+				for(auto receiver : typed)
+					res |= receiver->operator()(hWnd, w, l);
+				return res;
+			}
+		};
+		Distributor event_distributor;
+		enum class Position {
+			ASIS, CENTERED
+		};
 		struct InitArg {
-			LPCWSTR class_name;
+			ConstString class_name = L"Window";
 			HINSTANCE instance = nullptr;
-			LPCWSTR title = nullptr;
+			ConstString title = nullptr;
 			UINT class_style = CS_HREDRAW | CS_VREDRAW;
 			HICON icon = nullptr, icon_small = nullptr;
 			HCURSOR cursor = nullptr;
 			HBRUSH background_brush = nullptr;
-			LPCWSTR menu_name = nullptr;
+			ConstString menu_name = nullptr;
 			int x = 0, y = 0;
 			int width = 640, height = 480;
 			DWORD style = WS_OVERLAPPEDWINDOW;
+			Position position = Position::ASIS;
 		};
 		Window(InitArg const init_args);
-		bool ready();
-		WPARAM activate();
+		virtual void init() override;
+		virtual void update() override;
+		void center() {
+			RECT rect_self;
+			GetWindowRect(hWnd, &rect_self);
+			int width = rect_self.right - rect_self.left;
+			int height = rect_self.bottom - rect_self.top;
+			int screen_width = GetSystemMetrics(SM_CXSCREEN);
+			int screen_height = GetSystemMetrics(SM_CYSCREEN);
+			int x = (screen_width - width) / 2;
+			int y = (screen_height - height) / 2;
+			MoveWindow(hWnd, x, y, width, height, FALSE);
+		}
 	};
 }

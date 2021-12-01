@@ -12,7 +12,13 @@
     <ClInclude Include="win32ge.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="win32gecore.hpp">
+    <ClInclude Include="game.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gameobject.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="event.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -23,8 +29,5 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{b5853dd4-6a1a-4490-9662-44b829b37bfa}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

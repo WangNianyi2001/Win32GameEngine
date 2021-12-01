@@ -3,26 +3,7 @@
 using namespace Win32GameEngine;
 using namespace std;
 
-LRESULT EventDistributor::operator()(
-	HWND hWnd, Event type, WPARAM w, LPARAM l
-) {
-	auto it = receivers.find(type);
-	if(it == receivers.end())
-		return DefWindowProc(hWnd, type, w, l);
-	auto typed = it->second;
-	LRESULT res = 0;
-	for(Receiver *receiver : typed)
-		res |= receiver->operator()(hWnd, w, l);
-	return res;
-}
-
-void EventDistributor::add(Event type, Receiver *receiver) {
-	receivers[type].insert(receiver);
-}
-
-Window::HWndMap Window::hwnd_map = HWndMap();
-
-LRESULT Window::event_processor(HWND hWnd, Event type, WPARAM w, LPARAM l) {
+LRESULT CALLBACK Window::event_processor(HWND hWnd, RawEvent type, WPARAM w, LPARAM l) {
 	auto it = Window::hwnd_map.find(hWnd);
 	if(it == Window::hwnd_map.end())
 		return DefWindowProc(hWnd, type, w, l);
@@ -49,20 +30,20 @@ Window::Window(InitArg const args) {
 		args.width, args.height,
 		nullptr, nullptr, nullptr, nullptr
 	);
-}
-
-bool Window::ready() {
-	return hWnd;
-}
-
-WPARAM Window::activate() {
 	hwnd_map.insert(pair(hWnd, this));
+	if(args.position == Position::CENTERED)
+		this->center();
+}
+
+void Window::init() {
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
+}
+
+void Window::update() {
 	MSG message;
-	while(GetMessage(&message, nullptr, 0, 0)) {
+	while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&message);
 		DispatchMessage(&message);
 	}
-	return message.wParam;
 }
