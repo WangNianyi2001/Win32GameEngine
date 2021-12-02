@@ -26,36 +26,35 @@ namespace Win32GameEngine {
 		}
 	};
 
-	template<typename Out, typename ...In>
+	template<typename ...In>
 	struct Receiver {
-		virtual Out operator()(In ...args) = 0;
+		virtual void operator()(In ...args) = 0;
 	};
 
-	template<typename Out, derived_from_template<Event> Event>
-	struct EventReceiver : Receiver<Out, Event> {};
+	template<derived_from_template<Event> Event>
+	struct EventReceiver : Receiver<Event> {};
 
-	template<typename Out, typename ...In>
-	struct Handler : Receiver<Out, In ...> {
-		using Function = function<Out(In ...)>;
+	template<typename ...In>
+	struct Handler : Receiver<In ...> {
+		using Function = function<void(In ...)>;
 		Function f;
-		virtual Out operator()(In ...args) override {
-			return f(args...);
+		virtual inline void operator()(In ...args) override {
+			f(args...);
 		}
 		Handler(Function f) : f(f) {}
 	};
 
-	template<typename Next, typename Out, derived_from_template<Event> Event>
-	struct EventMedium : EventReceiver<Out, Event> {
+	template<typename Next, derived_from_template<Event> Event>
+	struct EventMedium : EventReceiver<Event> {
 		Next const next;
 		EventMedium(Next next) : next(next) {}
 	};
 
 	template<
 		derived_from_template<Event> Event,
-		typename Out,
-		typename Receiver = Handler<Out, Event>
+		typename Receiver = Handler<Event>
 	>
-	struct EventDistributor : EventReceiver<Out, Event> {
+	struct EventDistributor : EventReceiver<Event> {
 		using EventType = Event::_Type;
 		template<typename T>
 		using Container = map<EventType, set<T>>;

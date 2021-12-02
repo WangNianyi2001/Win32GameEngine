@@ -14,26 +14,25 @@ namespace Win32GameEngine {
 		LPARAM lParam;
 	};
 	using SystemEvent = Event<UINT, SystemEventData>;
-	using SystemHandler = Handler<LRESULT, SystemEvent>;
+	using SystemHandler = Handler<SystemEvent>;
 	static SystemHandler *defaultDestroy = new SystemHandler{ [](SystemEvent) {
 		PostQuitMessage(0);
 		return 0;
 	} };
 
-	struct PaintMedium : EventMedium<Handler<void, HDC> *, LRESULT, SystemEvent> {
-		using EventMedium<Handler<void, HDC> *, LRESULT, SystemEvent>::EventMedium;
-		virtual LRESULT operator()(SystemEvent event) override {
+	struct PaintMedium : EventMedium<Handler<HDC> *, SystemEvent> {
+		using EventMedium<Handler<HDC> *, SystemEvent>::EventMedium;
+		virtual void operator()(SystemEvent event) override {
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(event.data.hWnd, &ps);
 			next->operator()(hdc);
 			EndPaint(event.data.hWnd, &ps);
-			return 0;
 		}
 	};
 
-	struct Painter : Handler<LRESULT, SystemEvent> {
-		Painter(function<void(HDC)> f) : Handler<LRESULT, SystemEvent>(
-			PaintMedium(new Handler<void, HDC>{ f })
+	struct Painter : Handler<SystemEvent> {
+		Painter(function<void(HDC)> f) : Handler<SystemEvent>(
+			PaintMedium(new Handler<HDC>(f))
 		) {}
 	};
 
@@ -42,26 +41,27 @@ namespace Win32GameEngine {
 			auto it = Window::hwnd_map.find(hWnd);
 			if(it == Window::hwnd_map.end())
 				return DefWindowProc(hWnd, type, w, l);
-			return it->second->events(SystemEvent{
+			it->second->events(SystemEvent{
 				type,
 				EventPropragation::DISABLED,
 				SystemEventData{ hWnd, w, l }
 			});
+			return 0;
 		}
 		using HWndMap = map<HWND, Window *>;
 		inline static HWndMap hwnd_map = HWndMap();
 	private:
 		HWND hWnd;
 	public:
-		struct Distributor : public EventDistributor<SystemEvent, LRESULT> {
-			virtual LRESULT operator()(SystemEvent event) override {
+		struct Distributor : public EventDistributor<SystemEvent> {
+			virtual void operator()(SystemEvent event) override {
 				auto it = receivers.find(event.type);
-				if(it == receivers.end())
-					return DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
-				LRESULT res = 0;
+				if(it == receivers.end()) {
+					DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
+					return;
+				}
 				for(auto receiver : it->second)
-					res |= receiver->operator()(event);
-				return res;
+					receiver->operator()(event);
 			}
 		};
 		Distributor events;

@@ -11,22 +11,19 @@ namespace Win32GameEngine {
 	struct GameEventData {};
 	using GameEvent = Event<GameEventType, GameEventData>;
 
-	class GameObject {
+	class GameObject : public EventDistributor<GameEvent> {
 	private:
 		bool active = true;
 	protected:
 		GameObject *parent = nullptr;
 	public:
-		struct Distributor : EventDistributor<GameEvent, void> {
-			virtual void operator()(GameEvent event) override {
-				auto it = receivers.find(event.type);
-				if(it == receivers.end())
-					return;
-				for(auto receiver : it->second)
-					receiver->operator()(event);
-			}
-		};
-		Distributor events;
+		virtual void operator()(GameEvent event) override {
+			auto it = receivers.find(event.type);
+			if(it == receivers.end())
+				return;
+			for(auto receiver : it->second)
+				receiver->operator()(event);
+		}
 		inline bool isactive() { return active; }
 		inline void setactivity(bool a) { active = a; }
 		virtual void init() {}
