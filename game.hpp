@@ -1,24 +1,21 @@
 #pragma once
 
 #include "window.hpp"
+#include "scene.hpp"
 #include "gameobject.hpp"
 
 namespace Win32GameEngine {
 	class Game : public GameObject {
-		bool _alive = true;
 	protected:
-		Window *window;
+		Window *const window;
 		virtual void quit() {
-			_alive = false;
+			setactivity(false);
 		}
 	public:
-		Game() = default;
-		bool alive() {
-			return _alive;
-		}
+		Game(Window *const window) : window(window) {}
 		virtual void init() override {
-			window->event_distributor.add(WM_DESTROY, defaultDestroy);
-			window->event_distributor.add(WM_DESTROY, new RawHandler{ [&](HWND, WPARAM, LPARAM) {
+			window->events.add(WM_DESTROY, defaultDestroy);
+			window->events.add(WM_DESTROY, new RawHandler{ [&](RawEvent) {
 				this->quit();
 				return 0;
 			} });

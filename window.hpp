@@ -7,13 +7,19 @@
 namespace Win32GameEngine {
 	using namespace std;
 
-	using RawHandler = Handler<LRESULT, HWND, WPARAM, LPARAM>;
-
-	static RawHandler *defaultDestroy = new RawHandler{ [](HWND, WPARAM, LPARAM) {
+	using RawEventData = struct {
+		HWND hWnd;
+		WPARAM wParam;
+		LPARAM lParam;
+	};
+	using RawEvent = Event<UINT, RawEventData>;
+	using RawHandler = Handler<LRESULT, RawEvent>;
+	static RawHandler *defaultDestroy = new RawHandler{ [](RawEvent) {
 		PostQuitMessage(0);
 		return (LRESULT)0;
 	} };
 
+	/*
 	struct PaintMedium : EventMedium<
 		EventReceiver<void, HDC> *,
 		LRESULT, HWND, WPARAM, LPARAM
@@ -31,39 +37,44 @@ namespace Win32GameEngine {
 		}
 	};
 
-	struct Painter : EventReceiverWrapper<PaintMedium, LRESULT, HWND, WPARAM, LPARAM> {
-		Painter(function<void(HDC)> f) : EventReceiverWrapper<
+	struct Painter : EventExecutor<PaintMedium, LRESULT, HWND, WPARAM, LPARAM> {
+		Painter(function<void(HDC)> f) : EventExecutor<
 			PaintMedium, LRESULT, HWND, WPARAM, LPARAM
 		>(PaintMedium(new Handler<void, HDC>{ f })) {}
 	};
+	*/
 
 	using String = LPTSTR;
 	using ConstString = LPCTSTR;
 
-	class Window : public GameObject {
-		static LRESULT CALLBACK event_processor(HWND, RawEvent, WPARAM, LPARAM);
+	class Window {
+		static LRESULT CALLBACK event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
+			auto it = Window::hwnd_map.find(hWnd);
+			if(it == Window::hwnd_map.end())
+				return DefWindowProc(hWnd, type, w, l);
+			return it->second->events(RawEvent{
+				type,
+				EventPropragation::DISABLED,
+				RawEventData{ hWnd, w, l }
+			});
+		}
 		using HWndMap = map<HWND, Window *>;
 		inline static HWndMap hwnd_map = HWndMap();
 	private:
 		HWND hWnd;
 	public:
-		struct Distributor : public EventDistributor<
-			RawEvent,
-			EventReceiver<LRESULT, HWND, WPARAM, LPARAM>,
-			LRESULT, HWND, RawEvent, WPARAM, LPARAM
-		> {
-			virtual LRESULT operator()(HWND hWnd, RawEvent type, WPARAM w, LPARAM l) override {
-				auto it = receivers.find(type);
+		struct Distributor : public EventDistributor<RawEvent, LRESULT> {
+			virtual LRESULT operator()(RawEvent event) override {
+				auto it = receivers.find(event.type);
 				if(it == receivers.end())
-					return DefWindowProc(hWnd, type, w, l);
-				auto typed = it->second;
+					return DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
 				LRESULT res = 0;
-				for(auto receiver : typed)
-					res |= receiver->operator()(hWnd, w, l);
+				for(auto receiver : it->second)
+					res |= receiver->operator()(event);
 				return res;
 			}
 		};
-		Distributor event_distributor;
+		Distributor events;
 		enum class Position {
 			ASIS, CENTERED
 		};
@@ -81,9 +92,41 @@ namespace Win32GameEngine {
 			DWORD style = WS_OVERLAPPEDWINDOW;
 			Position position = Position::ASIS;
 		};
-		Window(InitArg const init_args);
-		virtual void init() override;
-		virtual void update() override;
+		Window(InitArg const args) {
+			WNDCLASS window_class = {
+				.style = args.class_style,
+				.lpfnWndProc = &Window::event_processor,
+				.cbClsExtra = 0,
+				.cbWndExtra = 0,
+				.hInstance = args.instance,
+				.hIcon = args.icon,
+				.hCursor = args.cursor,
+				.hbrBackground = args.background_brush,
+				.lpszMenuName = args.menu_name,
+				.lpszClassName = args.class_name,
+			};
+			RegisterClass(&window_class);
+			hWnd = CreateWindow(
+				args.class_name, args.title, args.style,
+				args.x, args.y,
+				args.width, args.height,
+				nullptr, nullptr, nullptr, nullptr
+			);
+			hwnd_map.insert(pair(hWnd, this));
+			if(args.position == Position::CENTERED)
+				this->center();
+		}
+		void init() {
+			ShowWindow(hWnd, SW_SHOW);
+			UpdateWindow(hWnd);
+		}
+		void update() {
+			MSG message;
+			while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
+				TranslateMessage(&message);
+				DispatchMessage(&message);
+			}
+		}
 		void center() {
 			RECT rect_self;
 			GetWindowRect(hWnd, &rect_self);

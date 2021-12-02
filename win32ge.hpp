@@ -1,6 +1,7 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 
 #include "game.hpp"
 
@@ -24,7 +25,7 @@ int WINAPI WIN32ENTRY(
 	if(!game)
 		return 0;
 	game->init();
-	for(; game->alive(); )
+	for(; game->isactive(); )
 		game->update();
 	return 0;
 }
