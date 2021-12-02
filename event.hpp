@@ -53,6 +53,14 @@ namespace Win32GameEngine {
 		using Container = map<EventType, set<T>>;
 		Container<_Receiver *> receivers;
 		EventDistributor() = default;
+		virtual void miss(Event) {}
+		virtual void operator()(Event event) override {
+			auto it = receivers.find(event.type);
+			if(it == receivers.end())
+				return miss(event);
+			for(auto receiver : it->second)
+				receiver->operator()(event);
+		}
 		void add(EventType type, _Receiver *receiver) {
 			receivers[type].insert(receiver);
 		}

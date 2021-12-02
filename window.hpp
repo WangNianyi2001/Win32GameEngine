@@ -53,14 +53,8 @@ namespace Win32GameEngine {
 		HWND hWnd;
 	public:
 		struct Distributor : public EventDistributor<SystemEvent> {
-			virtual void operator()(SystemEvent event) override {
-				auto it = receivers.find(event.type);
-				if(it == receivers.end()) {
-					DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
-					return;
-				}
-				for(auto receiver : it->second)
-					receiver->operator()(event);
+			virtual void miss(SystemEvent event) override {
+				DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
 			}
 		};
 		Distributor events;

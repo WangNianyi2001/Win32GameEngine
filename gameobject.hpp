@@ -17,13 +17,6 @@ namespace Win32GameEngine {
 	protected:
 		GameObject *parent = nullptr;
 	public:
-		virtual void operator()(GameEvent event) override {
-			auto it = receivers.find(event.type);
-			if(it == receivers.end())
-				return;
-			for(auto receiver : it->second)
-				receiver->operator()(event);
-		}
 		inline bool isactive() { return active; }
 		inline void setactivity(bool a) { active = a; }
 		virtual void init() {}
