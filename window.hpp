@@ -14,26 +14,6 @@ namespace Win32GameEngine {
 	};
 	using SystemEvent = Event<UINT, SystemEventData>;
 	using SystemHandler = Handler<SystemEvent>;
-	static SystemHandler *defaultDestroy = new SystemHandler{ [](SystemEvent) {
-		PostQuitMessage(0);
-		return 0;
-	} };
-
-	struct PaintMedium : EventMedium<Handler<HDC> *, SystemEvent> {
-		using EventMedium<Handler<HDC> *, SystemEvent>::EventMedium;
-		virtual void operator()(SystemEvent event) override {
-			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(event.data.hWnd, &ps);
-			next->operator()(hdc);
-			EndPaint(event.data.hWnd, &ps);
-		}
-	};
-
-	struct Painter : Handler<SystemEvent> {
-		Painter(function<void(HDC)> f) : Handler<SystemEvent>(
-			PaintMedium(new Handler<HDC>(f))
-		) {}
-	};
 
 	class Window {
 		static LRESULT CALLBACK event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
@@ -42,7 +22,6 @@ namespace Win32GameEngine {
 				return DefWindowProc(hWnd, type, w, l);
 			it->second->events(SystemEvent{
 				type,
-				EventPropragation::DISABLED,
 				SystemEventData{ hWnd, w, l }
 			});
 			return 0;
@@ -52,7 +31,7 @@ namespace Win32GameEngine {
 	private:
 		HWND hWnd;
 	public:
-		struct Distributor : public EventDistributor<SystemEvent> {
+		struct Distributor : EventDistributor<SystemEvent> {
 			virtual void miss(SystemEvent event) override {
 				DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
 			}
@@ -120,6 +99,28 @@ namespace Win32GameEngine {
 			int x = (screen_width - width) / 2;
 			int y = (screen_height - height) / 2;
 			MoveWindow(hWnd, x, y, width, height, FALSE);
+		}
+	};
+
+	auto defaultQuit = [](SystemEvent) {
+		PostQuitMessage(0);
+		return 0;
+	};
+
+	struct PaintMedium : EventMedium<Handler<HDC> *, SystemEvent> {
+		using EventMedium<Handler<HDC> *, SystemEvent>::EventMedium;
+		virtual void operator()(SystemEvent event) override {
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(event.data.hWnd, &ps);
+			next->operator()(hdc);
+			EndPaint(event.data.hWnd, &ps);
+		}
+	};
+
+	struct Painter : Handler<SystemEvent> {
+		Painter(function<void(HDC)> f) : Handler<SystemEvent>(
+			PaintMedium(new Handler<HDC>(f))
+			) {
 		}
 	};
 }

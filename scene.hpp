@@ -8,10 +8,12 @@ namespace Win32GameEngine {
 	class Scene : public GameObject {
 	public:
 		set<Entity> entities;
-		virtual void update() override {
-			for(Entity entity : entities) {
-				// TODO
-			}
+		Scene() {
+			add(GameEventType::UPDATE, [&](GameEvent) {
+				for(Entity entity : entities) {
+					// TODO
+				}
+			});
 		}
 	};
 }

@@ -8,14 +8,11 @@
 namespace Win32GameEngine {
 	using namespace std;
 
-	enum class EventPropragation {
-		DISABLED, UP, DOWN
-	};
 	template<typename Type, typename Data>
 	struct Event {
 		using _Type = Type;
+		using _Data = Data;
 		Type type;
-		EventPropragation propagation;
 		Data data;
 		inline bool operator==(Event<Type, Data> e) {
 			return type == e.type;
@@ -49,10 +46,7 @@ namespace Win32GameEngine {
 	template<derived_from_template<Event> Event, typename _Receiver = Handler<Event>>
 	struct EventDistributor : Receiver<Event> {
 		using EventType = Event::_Type;
-		template<typename T>
-		using Container = map<EventType, set<T>>;
-		Container<_Receiver *> receivers;
-		EventDistributor() = default;
+		map<EventType, set<_Receiver *>> receivers;
 		virtual void miss(Event) {}
 		virtual void operator()(Event event) override {
 			auto it = receivers.find(event.type);
@@ -61,12 +55,16 @@ namespace Win32GameEngine {
 			for(auto receiver : it->second)
 				receiver->operator()(event);
 		}
+		inline void operator()(Event::_Type type, Event::_Data data) {
+			operator()({ type, data });
+		}
 		void add(EventType type, _Receiver *receiver) {
+			auto it = receivers.begin();
 			receivers[type].insert(receiver);
 		}
-		template<typename Function>
-		void add(EventType type, Function receiver) {
-			receivers[type].insert(new _Receiver(receiver));
+		template<typename Action>
+		inline void add(EventType type, Action action) {
+			add(type, new _Receiver(action));
 		}
 	};
 }

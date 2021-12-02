@@ -8,21 +8,21 @@ namespace Win32GameEngine {
 	class Game : public GameObject {
 	protected:
 		Window *const window;
-		virtual void quit() {
-			setactivity(false);
-		}
 	public:
-		Game(Window *const window) : window(window) {}
-		virtual void init() override {
-			window->events.add(WM_DESTROY, defaultDestroy);
-			window->events.add(WM_DESTROY, [&](SystemEvent) {
-				this->quit();
-				return 0;
+		Game(Window *const w) : window(w) {
+			add(GameEventType::INIT, [&](GameEvent) {
+				window->events.add(WM_QUIT, defaultQuit);
+				window->init();
 			});
-			window->init();
+			add(GameEventType::UPDATE, [&](GameEvent) {
+				window->update();
+			});
+			add(GameEventType::INACTIVATE, [&](GameEvent) {
+				setactivity(false);
+			});
 		}
-		virtual void update() override {
-			window->update();
+		virtual void quit() {
+			operator()(GameEventType::INACTIVATE, { GameEventData::Propagation::DOWN });
 		}
 	};
 }
