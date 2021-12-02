@@ -7,42 +7,34 @@
 namespace Win32GameEngine {
 	using namespace std;
 
-	using RawEventData = struct {
+	using SystemEventData = struct {
 		HWND hWnd;
 		WPARAM wParam;
 		LPARAM lParam;
 	};
-	using RawEvent = Event<UINT, RawEventData>;
-	using RawHandler = Handler<LRESULT, RawEvent>;
-	static RawHandler *defaultDestroy = new RawHandler{ [](RawEvent) {
+	using SystemEvent = Event<UINT, SystemEventData>;
+	using SystemHandler = Handler<LRESULT, SystemEvent>;
+	static SystemHandler *defaultDestroy = new SystemHandler{ [](SystemEvent) {
 		PostQuitMessage(0);
 		return (LRESULT)0;
 	} };
 
-	/*
-	struct PaintMedium : EventMedium<
-		EventReceiver<void, HDC> *,
-		LRESULT, HWND, WPARAM, LPARAM
-	> {
-		using EventMedium<
-			EventReceiver<void, HDC> *,
-			LRESULT, HWND, WPARAM, LPARAM
-		>::EventMedium;
-		virtual LRESULT operator()(HWND hWnd, WPARAM, LPARAM) override {
+	struct PaintMedium : EventMedium<Handler<void, HDC> *, LRESULT, SystemEvent> {
+		using EventMedium<Handler<void, HDC> *, LRESULT, SystemEvent>::EventMedium;
+		virtual LRESULT operator()(SystemEvent event) override {
 			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(hWnd, &ps);
+			HDC hdc = BeginPaint(event.data.hWnd, &ps);
 			next->operator()(hdc);
-			EndPaint(hWnd, &ps);
+			EndPaint(event.data.hWnd, &ps);
 			return 0;
 		}
 	};
 
-	struct Painter : EventExecutor<PaintMedium, LRESULT, HWND, WPARAM, LPARAM> {
-		Painter(function<void(HDC)> f) : EventExecutor<
-			PaintMedium, LRESULT, HWND, WPARAM, LPARAM
-		>(PaintMedium(new Handler<void, HDC>{ f })) {}
+	struct Painter : Handler<LRESULT, SystemEvent> {
+		Painter(function<void(HDC)> f) : Handler<LRESULT, SystemEvent>(
+			PaintMedium(new Handler<void, HDC>{ f })
+		) {}
 	};
-	*/
 
 	using String = LPTSTR;
 	using ConstString = LPCTSTR;
@@ -52,10 +44,10 @@ namespace Win32GameEngine {
 			auto it = Window::hwnd_map.find(hWnd);
 			if(it == Window::hwnd_map.end())
 				return DefWindowProc(hWnd, type, w, l);
-			return it->second->events(RawEvent{
+			return it->second->events(SystemEvent{
 				type,
 				EventPropragation::DISABLED,
-				RawEventData{ hWnd, w, l }
+				SystemEventData{ hWnd, w, l }
 			});
 		}
 		using HWndMap = map<HWND, Window *>;
@@ -63,8 +55,8 @@ namespace Win32GameEngine {
 	private:
 		HWND hWnd;
 	public:
-		struct Distributor : public EventDistributor<RawEvent, LRESULT> {
-			virtual LRESULT operator()(RawEvent event) override {
+		struct Distributor : public EventDistributor<SystemEvent, LRESULT> {
+			virtual LRESULT operator()(SystemEvent event) override {
 				auto it = receivers.find(event.type);
 				if(it == receivers.end())
 					return DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);

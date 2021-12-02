@@ -8,6 +8,8 @@ namespace Win32GameEngine {
 	enum class GameEventType {
 		INIT, UPDATE, ACTIVATE, INACTIVATE
 	};
+	struct GameEventData {};
+	using GameEvent = Event<GameEventType, GameEventData>;
 
 	class GameObject {
 	private:
@@ -15,20 +17,16 @@ namespace Win32GameEngine {
 	protected:
 		GameObject *parent = nullptr;
 	public:
-		/*
-		struct Distributor : EventDistributor<
-			GameEventType, EventReceiver<void>, void, GameEventType
-		> {
-			virtual void operator()(GameEventType type) override {
-				auto it = receivers.find(type);
+		struct Distributor : EventDistributor<GameEvent, void> {
+			virtual void operator()(GameEvent event) override {
+				auto it = receivers.find(event.type);
 				if(it == receivers.end())
 					return;
 				for(auto receiver : it->second)
-					receiver->operator()();
+					receiver->operator()(event);
 			}
 		};
 		Distributor events;
-		*/
 		inline bool isactive() { return active; }
 		inline void setactivity(bool a) { active = a; }
 		virtual void init() {}

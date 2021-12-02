@@ -41,20 +41,14 @@ namespace Win32GameEngine {
 	template<typename Out, derived_from_template<Event> Event>
 	struct EventReceiver : Receiver<Out, Event> {};
 
-	template<typename Function, typename Out, typename ...In>
-	struct Executor : Receiver<Out, In ...> {
+	template<typename Out, typename ...In>
+	struct Handler : Receiver<Out, In ...> {
+		using Function = function<Out(In ...)>;
 		Function f;
 		virtual Out operator()(In ...args) override {
 			return f(args...);
 		}
-		Executor(Function f) : f(f) {}
-	};
-
-	template<typename Out, typename ...In>
-	struct Handler : Executor<function<Out(In ...)>, Out, In ...> {
-		using Executor<
-			function<Out(In ...)>, Out, In ...
-		>::Executor;
+		Handler(Function f) : f(f) {}
 	};
 
 	template<typename Next, typename Out, derived_from_template<Event> Event>
@@ -63,7 +57,11 @@ namespace Win32GameEngine {
 		EventMedium(Next next) : next(next) {}
 	};
 
-	template<derived_from_template<Event> Event, typename Out, typename Receiver = Receiver<Out, Event>>
+	template<
+		derived_from_template<Event> Event,
+		typename Out,
+		typename Receiver = Handler<Out, Event>
+	>
 	struct EventDistributor : EventReceiver<Out, Event> {
 		using EventType = Event::_Type;
 		template<typename T>
@@ -72,6 +70,10 @@ namespace Win32GameEngine {
 		EventDistributor() = default;
 		void add(EventType type, Receiver *receiver) {
 			receivers[type].insert(receiver);
+		}
+		template<typename Function>
+		void add(EventType type, Function receiver) {
+			receivers[type].insert(new Receiver(receiver));
 		}
 	};
 }
