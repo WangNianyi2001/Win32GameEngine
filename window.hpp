@@ -1,5 +1,6 @@
 #pragma once
 
+#include "basics.h"
 #include <windows.h>
 #include "event.hpp"
 #include "gameobject.hpp"
@@ -16,7 +17,7 @@ namespace Win32GameEngine {
 	using SystemHandler = Handler<LRESULT, SystemEvent>;
 	static SystemHandler *defaultDestroy = new SystemHandler{ [](SystemEvent) {
 		PostQuitMessage(0);
-		return (LRESULT)0;
+		return 0;
 	} };
 
 	struct PaintMedium : EventMedium<Handler<void, HDC> *, LRESULT, SystemEvent> {
@@ -35,9 +36,6 @@ namespace Win32GameEngine {
 			PaintMedium(new Handler<void, HDC>{ f })
 		) {}
 	};
-
-	using String = LPTSTR;
-	using ConstString = LPCTSTR;
 
 	class Window {
 		static LRESULT CALLBACK event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {

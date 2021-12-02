@@ -1,19 +1,12 @@
 #pragma once
 
+#include "basics.h"
 #include <map>
 #include <set>
 #include <functional>
 
 namespace Win32GameEngine {
 	using namespace std;
-
-	template <template <class...> class Template, class... Args>
-	void _derived_from_template(const Template<Args...> &);
-
-	template <class T, template <class...> class Template>
-	concept derived_from_template = requires(const T & t) {
-		_derived_from_template<Template>(t);
-	};
 
 	enum class EventPropragation {
 		DISABLED, UP, DOWN
