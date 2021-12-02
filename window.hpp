@@ -3,12 +3,11 @@
 #include "basics.h"
 #include <windows.h>
 #include "event.hpp"
-#include "gameobject.hpp"
 
 namespace Win32GameEngine {
 	using namespace std;
 
-	using SystemEventData = struct {
+	struct SystemEventData {
 		HWND hWnd;
 		WPARAM wParam;
 		LPARAM lParam;
