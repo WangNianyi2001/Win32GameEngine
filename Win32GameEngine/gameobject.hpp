@@ -6,20 +6,16 @@
 
 namespace Win32GameEngine {
 	enum class GameEventType {
-		INIT, UPDATE, ACTIVATE, INACTIVATE
+		INIT, KILL,
+		UPDATE, FIXEDUPDATE,
+		ACTIVATE, INACTIVATE
 	};
-	struct GameEventData {
-		enum class Propagation {
-			NONE, UP, DOWN
-		} propagation;
-	};
+	struct GameEventData {};
 	using GameEvent = Event<GameEventType, GameEventData>;
 
 	class GameObject : public EventDistributor<GameEvent> {
 	private:
 		bool active = true;
-	protected:
-		GameObject *parent = nullptr;
 	public:
 		inline bool isactive() { return active; }
 		inline void setactivity(bool a) { active = a; }

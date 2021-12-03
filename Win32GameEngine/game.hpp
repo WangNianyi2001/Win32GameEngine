@@ -17,12 +17,12 @@ namespace Win32GameEngine {
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				window->update();
 			});
-			add(GameEventType::INACTIVATE, [&](GameEvent) {
+			add(GameEventType::KILL, [&](GameEvent) {
 				setactivity(false);
 			});
 		}
 		virtual void quit() {
-			operator()(GameEventType::INACTIVATE, { GameEventData::Propagation::DOWN });
+			operator()({ GameEventType::KILL, EventPropagation::DOWN });
 		}
 	};
 }

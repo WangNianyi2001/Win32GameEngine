@@ -20,10 +20,7 @@ namespace Win32GameEngine {
 			auto it = Window::hwnd_map.find(hWnd);
 			if(it == Window::hwnd_map.end())
 				return DefWindowProc(hWnd, type, w, l);
-			it->second->events(SystemEvent{
-				type,
-				SystemEventData{ hWnd, w, l }
-			});
+			it->second->events({ type, EventPropagation::NONE, SystemEventData{ hWnd, w, l }});
 			return 0;
 		}
 		using HWndMap = map<HWND, Window *>;
@@ -105,22 +102,5 @@ namespace Win32GameEngine {
 	auto defaultQuit = [](SystemEvent) {
 		PostQuitMessage(0);
 		return 0;
-	};
-
-	struct PaintMedium : EventMedium<Handler<HDC> *, SystemEvent> {
-		using EventMedium<Handler<HDC> *, SystemEvent>::EventMedium;
-		virtual void operator()(SystemEvent event) override {
-			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(event.data.hWnd, &ps);
-			next->operator()(hdc);
-			EndPaint(event.data.hWnd, &ps);
-		}
-	};
-
-	struct Painter : Handler<SystemEvent> {
-		Painter(function<void(HDC)> f) : Handler<SystemEvent>(
-			PaintMedium(new Handler<HDC>(f))
-			) {
-		}
 	};
 }

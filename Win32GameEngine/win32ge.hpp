@@ -24,8 +24,8 @@ int WINAPI WIN32ENTRY(
 	using namespace Win32GameEngine;
 	if(!game)
 		return 0;
-	game->operator()(GameEventType::INIT, { GameEventData::Propagation::NONE });
+	game->operator()({ GameEventType::INIT, EventPropagation::NONE });
 	for(; game->isactive(); )
-		(*game)(GameEventType::UPDATE, { GameEventData::Propagation::DOWN });
+		(*game)({ GameEventType::UPDATE, EventPropagation::DOWN });
 	return 0;
 }
