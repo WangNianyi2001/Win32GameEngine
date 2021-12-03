@@ -50,7 +50,8 @@ namespace Win32GameEngine {
 		virtual void propagateup(Event event) override {
 			Event up = event;
 			up.propagation = EventPropagation::UP;
-			(*this->parent)(up);
+			if(parent)
+				(*parent)(up);
 		}
 	};
 	// Orphan specialization
@@ -60,7 +61,7 @@ namespace Win32GameEngine {
 		virtual void propagatedown(Event event) {
 			Event down = event;
 			down.propagation = EventPropagation::DOWN;
-			for(auto *child : this->children)
+			for(auto *child : children)
 				(*child)(down);
 		}
 	};

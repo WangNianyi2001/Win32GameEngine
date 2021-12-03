@@ -1,7 +1,8 @@
 #pragma once
 
 #include <initializer_list>
-#include <algorithm>
+#include <map>
+#include <functional>
 #include "event.hpp"
 
 namespace Win32GameEngine {
@@ -20,6 +21,20 @@ namespace Win32GameEngine {
 	public:
 		inline bool isactive() { return active; }
 		inline void setactivity(bool a) { active = a; }
+		virtual void oninit() {}
+		virtual void onkill() {}
+		virtual void onupdate() {}
+		virtual void onfixedupdate() {}
+		virtual void onactivate() {}
+		virtual void oninactivate() {}
+		GameObject<Parent, Child>() {
+			this->add(GameEventType::INIT, [&](GameEvent) { oninit(); });
+			this->add(GameEventType::KILL, [&](GameEvent) { onkill(); });
+			this->add(GameEventType::UPDATE, [&](GameEvent) { onupdate(); });
+			this->add(GameEventType::FIXEDUPDATE, [&](GameEvent) { onfixedupdate(); });
+			this->add(GameEventType::ACTIVATE, [&](GameEvent) { onactivate(); });
+			this->add(GameEventType::INACTIVATE, [&](GameEvent) { oninactivate(); });
+		}
 	};
 
 	template<typename T, unsigned D>
@@ -56,7 +71,7 @@ namespace Win32GameEngine {
 	using Vec2F = Vector<float, 2U>;
 	using Vec3F = Vector<float, 3U>;
 
-	class Entity : public GameObject<> {
+	class Entity : public GameObject<Entity, Entity> {
 	public:
 		struct Transform {
 			Vec3F position;
