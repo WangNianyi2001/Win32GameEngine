@@ -33,8 +33,6 @@ namespace Win32GameEngine {
 
 	template<derived_from_template<Event> Event, typename Parent = void, typename Child = void>
 	struct Receiver {
-		Parent *parent;
-		set<Child *> children;
 		virtual void operator()(Event event) = 0;
 		virtual void propagateup(Event event) {}
 		virtual void propagatedown(Event event) {}
@@ -47,7 +45,8 @@ namespace Win32GameEngine {
 	};
 	// Widow specialization
 	template<derived_from_template<Event> Event, derived_from_template<Receiver> Parent>
-	struct Receiver<Event, Parent, void> : Receiver<Event, Parent, Receiver<Event>> {
+	struct Receiver<Event, Parent, void> : Receiver<Event, void, void> {
+		Parent *parent;
 		virtual void propagateup(Event event) override {
 			Event up = event;
 			up.propagation = EventPropagation::UP;
@@ -56,7 +55,8 @@ namespace Win32GameEngine {
 	};
 	// Orphan specialization
 	template<derived_from_template<Event> Event, derived_from_template<Receiver> Child>
-	struct Receiver<Event, void, Child> : Receiver<Event, Receiver<Event>, Child> {
+	struct Receiver<Event, void, Child> : Receiver<Event, void, void> {
+		set<Child *> children;
 		virtual void propagatedown(Event event) {
 			Event down = event;
 			down.propagation = EventPropagation::DOWN;
@@ -66,13 +66,13 @@ namespace Win32GameEngine {
 	};
 	// Full specialization
 	template<derived_from_template<Event> Event, derived_from_template<Receiver> Parent, derived_from_template<Receiver> Child>
-	struct Receiver<Event, Parent, Child> : Receiver<Event, Parent, Receiver<Event>> {
+	struct Receiver<Event, Parent, Child> : Receiver<Event, Parent, void>, Receiver<Event, void, Child> {
 		using Receiver<Event, Parent, void>::propagateup;
 		using Receiver<Event, void, Child>::propagatedown;
 	};
 
-	template<derived_from_template<Event> Event>
-	struct Handler : Receiver<Event> {
+	template<derived_from_template<Event> Event, typename Parent = void, typename Child = void>
+	struct Handler : Receiver<Event, Parent, Child> {
 		using Function = function<void(Event)>;
 		Function f;
 		virtual inline void operator()(Event event) override {
@@ -82,14 +82,14 @@ namespace Win32GameEngine {
 		Handler(Function f) : f(f) {}
 	};
 
-	template<typename Next, derived_from_template<Event> Event>
-	struct EventMedium : Receiver<Event> {
+	template<typename Next, derived_from_template<Event> Event, typename Parent = void, typename Child = void>
+	struct EventMedium : Receiver<Event, Parent, Child> {
 		Next const next;
 		EventMedium(Next next) : next(next) {}
 	};
 
-	template<derived_from_template<Event> Event, typename Receiver = Handler<Event>>
-	struct EventDistributor : Win32GameEngine::Receiver<Event> {
+	template<derived_from_template<Event> Event, typename Receiver = Handler<Event>, typename Parent = void, typename Child = void>
+	struct EventDistributor : Win32GameEngine::Receiver<Event, Parent, Child> {
 		using EventType = Event::_Type;
 		map<EventType, set<Receiver *>> receivers;
 		virtual void miss(Event) {}
@@ -99,7 +99,7 @@ namespace Win32GameEngine {
 				return miss(event);
 			for(auto receiver : it->second)
 				(*receiver)(event);
-			Win32GameEngine::Receiver<Event>::propagate(event);
+			Win32GameEngine::Receiver<Event, Parent, Child>::propagate(event);
 		}
 		void add(EventType type, Receiver *receiver) {
 			auto it = receivers.begin();

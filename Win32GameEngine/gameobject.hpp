@@ -13,7 +13,8 @@ namespace Win32GameEngine {
 	struct GameEventData {};
 	using GameEvent = Event<GameEventType, GameEventData>;
 
-	class GameObject : public EventDistributor<GameEvent> {
+	template<typename Parent = void, typename Child = void>
+	class GameObject : public EventDistributor<GameEvent, Handler<GameEvent>, Parent, Child> {
 	private:
 		bool active = true;
 	public:
@@ -55,7 +56,7 @@ namespace Win32GameEngine {
 	using Vec2F = Vector<float, 2U>;
 	using Vec3F = Vector<float, 3U>;
 
-	class Entity : public GameObject {
+	class Entity : public GameObject<> {
 	public:
 		struct Transform {
 			Vec3F position;

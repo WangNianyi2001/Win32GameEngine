@@ -5,7 +5,7 @@
 #include "gameobject.hpp"
 
 namespace Win32GameEngine {
-	class Game : public GameObject {
+	class Game : public GameObject<void, Scene> {
 	protected:
 		Window *const window;
 	public:

@@ -5,7 +5,8 @@
 
 namespace Win32GameEngine {
 	using namespace std;
-	class Scene : public GameObject {
+	class Game;
+	class Scene : public GameObject<Game, Entity> {
 	public:
 		set<Entity> entities;
 		Scene() {
