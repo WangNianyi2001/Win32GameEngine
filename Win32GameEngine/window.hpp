@@ -12,30 +12,23 @@ namespace Win32GameEngine {
 		WPARAM wParam;
 		LPARAM lParam;
 	};
-	using SystemEvent = Event<UINT, SystemEventData>;
+	struct SystemEvent : Event<UINT, SystemEventData> {
+		void defaultBehavior() {
+			DefWindowProc(data.hWnd, type, data.wParam, data.lParam);
+		}
+	};
 	using SystemHandler = Handler<SystemEvent>;
 
 	class Window {
-		static LRESULT CALLBACK event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
-			auto it = Window::hwnd_map.find(hWnd);
-			if(it == Window::hwnd_map.end())
-				return DefWindowProc(hWnd, type, w, l);
-			it->second->events({ type, EventPropagation::NONE, SystemEventData{ hWnd, w, l }});
-			return 0;
-		}
-		using HWndMap = map<HWND, Window *>;
-		inline static HWndMap hwnd_map = HWndMap();
-	private:
-		HWND hWnd;
 	public:
 		struct Distributor : EventDistributor<SystemEvent> {
 			virtual void miss(SystemEvent event) override {
-				DefWindowProc(event.data.hWnd, event.type, event.data.wParam, event.data.lParam);
+				event.defaultBehavior();
 			}
 		};
 		Distributor events;
-		enum class Position {
-			ASIS, CENTERED
+		enum class Style {
+			ASIS, CENTERED, FULLSCREEN
 		};
 		struct InitArg {
 			ConstString class_name = L"Window";
@@ -44,14 +37,27 @@ namespace Win32GameEngine {
 			UINT class_style = CS_HREDRAW | CS_VREDRAW;
 			HICON icon = nullptr, icon_small = nullptr;
 			HCURSOR cursor = nullptr;
-			HBRUSH background_brush = nullptr;
+			HBRUSH background_brush = (HBRUSH)GetStockObject(WHITE_BRUSH);
 			ConstString menu_name = nullptr;
-			int x = 0, y = 0;
-			int width = 640, height = 480;
-			DWORD style = WS_OVERLAPPEDWINDOW;
-			Position position = Position::ASIS;
+			Vec2I position{ CW_USEDEFAULT, CW_USEDEFAULT };
+			Vec2I size{ 640, 480 };
+			Style style = Style::ASIS;
 		};
-		Window(InitArg const args) {
+		static inline Vec2I screen{ GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+	private:
+		using HWndMap = map<HWND, Window *>;
+		inline static HWndMap hwnd_map = HWndMap();
+		HWND hWnd;
+		InitArg args;
+		static LRESULT CALLBACK event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
+			auto it = Window::hwnd_map.find(hWnd);
+			if(it == Window::hwnd_map.end())
+				return DefWindowProc(hWnd, type, w, l);
+			it->second->events({ type, EventPropagation::NONE, SystemEventData{ hWnd, w, l }});
+			return 0;
+		}
+	public:
+		Window(InitArg const args) : args(args) {
 			WNDCLASS window_class = {
 				.style = args.class_style,
 				.lpfnWndProc = &Window::event_processor,
@@ -66,17 +72,23 @@ namespace Win32GameEngine {
 			};
 			RegisterClass(&window_class);
 			hWnd = CreateWindow(
-				args.class_name, args.title, args.style,
-				args.x, args.y,
-				args.width, args.height,
+				args.class_name, args.title, WS_POPUP,
+				args.position.at(0), args.position.at(1),
+				args.size.at(0), args.size.at(1),
 				nullptr, nullptr, nullptr, nullptr
 			);
 			hwnd_map.insert(pair(hWnd, this));
-			if(args.position == Position::CENTERED)
-				this->center();
 		}
 		void init() {
 			ShowWindow(hWnd, SW_SHOW);
+			switch(args.style) {
+			case Style::CENTERED:
+				center();
+				break;
+			case Style::FULLSCREEN:
+				fullscreen();
+				break;
+			}
 			UpdateWindow(hWnd);
 		}
 		void update() {
@@ -86,16 +98,20 @@ namespace Win32GameEngine {
 				DispatchMessage(&message);
 			}
 		}
+		void fullscreen() {
+			args.size = screen;
+			SetWindowPos(hWnd, nullptr, 0, 0, screen[0], screen[1], SWP_SHOWWINDOW);
+		}
 		void center() {
-			RECT rect_self;
-			GetWindowRect(hWnd, &rect_self);
-			int width = rect_self.right - rect_self.left;
-			int height = rect_self.bottom - rect_self.top;
-			int screen_width = GetSystemMetrics(SM_CXSCREEN);
-			int screen_height = GetSystemMetrics(SM_CYSCREEN);
-			int x = (screen_width - width) / 2;
-			int y = (screen_height - height) / 2;
-			MoveWindow(hWnd, x, y, width, height, FALSE);
+			Vec2I pos = (screen - args.size) * .5f;
+			MoveWindow(hWnd, pos[0], pos[1], args.size[0], args.size[1], FALSE);
+		}
+		void minimize() {
+			ShowWindow(hWnd, SW_MINIMIZE);
+		}
+		void restore() {
+			ShowWindow(hWnd, SW_RESTORE);
+			BringWindowToTop(hWnd);
 		}
 	};
 

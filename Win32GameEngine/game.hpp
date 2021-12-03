@@ -11,6 +11,19 @@ namespace Win32GameEngine {
 	public:
 		Game(Window *const w) : window(w) {
 			add(GameEventType::INIT, [&](GameEvent) {
+				window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
+					switch(event.data.wParam) {
+					case SC_RESTORE:
+						// Fail to restore minimized window
+						window->restore();
+						break;
+					case SC_MINIMIZE:
+						return 0;
+					default:
+						event.defaultBehavior();
+					}
+					return 0;
+				});
 				window->events.add(WM_QUIT, defaultQuit);
 				window->init();
 			});
@@ -18,7 +31,7 @@ namespace Win32GameEngine {
 				window->update();
 			});
 			add(GameEventType::KILL, [&](GameEvent) {
-				setactivity(false);
+				inactivate();
 			});
 		}
 		virtual void quit() {

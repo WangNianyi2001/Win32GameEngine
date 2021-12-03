@@ -7,7 +7,8 @@ public:
 	ConstString name = L"My Game";
 	MyGame() : Game(new Window({
 		.title = name,
-		.position = Window::Position::CENTERED
+		.size = {100, 100},
+		.style = Window::Style::CENTERED
 	})) {
 		window->events.add(WM_DESTROY, [&](SystemEvent) {
 			quit();
