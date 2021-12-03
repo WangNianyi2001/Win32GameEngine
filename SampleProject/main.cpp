@@ -4,9 +4,7 @@ using namespace Win32GameEngine;
 
 class MyGame : public Game {
 public:
-	ConstString name = L"My Game";
 	MyGame() : Game(new Window({
-		.title = name,
 		.size = {100, 100},
 		.style = Window::Style::CENTERED
 	})) {

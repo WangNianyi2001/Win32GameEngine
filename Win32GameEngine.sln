@@ -10,6 +10,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SampleProject", "SampleProj
 		{611BCB85-8789-421B-93D9-385FAF6BF238} = {611BCB85-8789-421B-93D9-385FAF6BF238}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D24D1CA3-AFF5-4CAD-BC8A-AA2FFA05A0CC}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{0F1673F9-90A0-4766-865E-B9F103EE3765}"
+	ProjectSection(SolutionItems) = preProject
+		Images\hello-world-screenshot.png = Images\hello-world-screenshot.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -37,6 +47,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0F1673F9-90A0-4766-865E-B9F103EE3765} = {D24D1CA3-AFF5-4CAD-BC8A-AA2FFA05A0CC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA9FBC0A-8CF8-417F-A43D-6FCE1A0F0DB3}

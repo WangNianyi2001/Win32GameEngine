@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include <functional>
+// #include <functional>
 #include "event.hpp"
 
 namespace Win32GameEngine {
