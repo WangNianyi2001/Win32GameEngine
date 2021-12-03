@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Win32GameEngine::Game">
+    <Position X="11.75" Y="11.5" Width="1.5" />
+    <InheritanceLine Type="Win32GameEngine::GameObject&lt;Parent, Child&gt;" FixedToPoint="true">
+      <Path>
+        <Point X="12.375" Y="10.665" />
+        <Point X="12.375" Y="11.5" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAIAAABAAAAAAA=</HashCode>
+      <FileName>game.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Win32GameEngine::GameObject&lt;Parent, Child&gt;">
+    <Position X="10.5" Y="7.25" Width="3.75" />
+    <InheritanceLine Type="Win32GameEngine::EventDistributor&lt;Event, Receiver, Parent, Child&gt;" FixedToPoint="true">
+      <Path>
+        <Point X="12.25" Y="6.569" />
+        <Point X="12.25" Y="7.25" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AQAEAAAAAAAAAAAAAAAAQBAABAQQAIAAAAABIAIAAAA=</HashCode>
+      <FileName>gameobject.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Win32GameEngine::Entity">
+    <Position X="9.25" Y="11.5" Width="1.75" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Struct Name="Win32GameEngine::Entity::Transform" Collapsed="true">
+        <Compartments>
+          <Compartment Name="Fields" Collapsed="true" />
+        </Compartments>
+        <TypeIdentifier>
+          <NewMemberFileName>gameobject.hpp</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>gameobject.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Win32GameEngine::Scene">
+    <Position X="13.75" Y="11.5" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAgAAAAAAAAAAAAQAAAAAAAAAAAAA=</HashCode>
+      <FileName>scene.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Win32GameEngine::Window">
+    <Position X="1" Y="7" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="Win32GameEngine::Window::Distributor" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>window.hpp</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+      <Enum Name="Win32GameEngine::Window::Style" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>window.hpp</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+      <Struct Name="Win32GameEngine::Window::InitArg" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>window.hpp</NewMemberFileName>
+        </TypeIdentifier>
+      </Struct>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAwCAAAAAAAAAAIAAAAAIAQAAAAAAAIAgAICCAAEAAA=</HashCode>
+      <FileName>window.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="Win32GameEngine::Vector&lt;T, D&gt;">
+    <Position X="6.75" Y="11.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAgEAwAAAAAAA=</HashCode>
+      <FileName>basics.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::Event&lt;Type, Data&gt;">
+    <Position X="1" Y="1.25" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAQAAAAABAAAAAAAwAgAAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="propagation" />
+    </ShowAsAssociation>
+  </Struct>
+  <Struct Name="Win32GameEngine::Receiver&lt;Event, Parent, Child&gt;">
+    <Position X="11.25" Y="1.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAEAAgAAAAAAAAAAAAAAAAAABAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::Receiver&lt;Event, Parent, void&gt;">
+    <Position X="14.5" Y="1.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAABAAAAgAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::Receiver&lt;Event, void, Child&gt;">
+    <Position X="7.75" Y="1.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::Handler&lt;Event, Parent, Child&gt;">
+    <Position X="14.5" Y="4.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAIAAAAEAAAAAAAAAAAAAAQAAAAAAAAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::EventMedium&lt;Next, Event, Parent, Child&gt;">
+    <Position X="7" Y="4.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::EventDistributor&lt;Event, Receiver, Parent, Child&gt;">
+    <Position X="10.5" Y="4.5" Width="3.5" />
+    <InheritanceLine Type="Win32GameEngine::Receiver&lt;Event, Parent, Child&gt;" FixedToPoint="true">
+      <Path>
+        <Point X="12.375" Y="3.189" />
+        <Point X="12.375" Y="4.5" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAgAAAAAAAEAAAAAAAAAAAAAAABAAAAAACAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::GameEventData">
+    <Position X="3.5" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>gameobject.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::SystemEventData">
+    <Position X="1" Y="5.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAAAAQAAAAIAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>window.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::SystemEvent">
+    <Position X="1" Y="3.75" Width="2" />
+    <InheritanceLine Type="Win32GameEngine::Event&lt;Type, Data&gt;" FixedToPoint="true">
+      <Path>
+        <Point X="1.875" Y="3.19" />
+        <Point X="1.875" Y="3.75" />
+      </Path>
+      <InheritanceModifierLabel ManuallyPlaced="true" ManuallySized="true">
+        <Position X="-0.002" Y="0.06" Height="0.182" Width="0.5" />
+      </InheritanceModifierLabel>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>window.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Struct Name="Win32GameEngine::GameEvent">
+    <Position X="3.5" Y="3.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>gameobject.hpp</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="Win32GameEngine::EventPropagation">
+    <Position X="4" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAAAAAICAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>event.hpp</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Win32GameEngine::GameEventType">
+    <Position X="3.5" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAEAAAAAAAAAAAAAAAAAAAAgAAAAEAAAACAAEA=</HashCode>
+      <FileName>gameobject.hpp</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

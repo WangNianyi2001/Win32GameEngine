@@ -11,7 +11,7 @@ namespace Win32GameEngine {
 		ACTIVATE, INACTIVATE
 	};
 	struct GameEventData {};
-	using GameEvent = Event<GameEventType, GameEventData>;
+	struct GameEvent : Event<GameEventType, GameEventData> {};
 
 	template<typename Parent = void, typename Child = void>
 	class GameObject : public EventDistributor<GameEvent, Handler<GameEvent>, Parent, Child> {

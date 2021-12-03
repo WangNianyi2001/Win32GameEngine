@@ -19,7 +19,7 @@
     <ClInclude Include="scene.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="basics.h">
+    <ClInclude Include="basics.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -30,5 +30,8 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{b5853dd4-6a1a-4490-9662-44b829b37bfa}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>
