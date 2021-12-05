@@ -1,8 +1,8 @@
 #pragma once
 
 #include <map>
-// #include <functional>
 #include "event.hpp"
+#include "basics.hpp"
 
 namespace Win32GameEngine {
 	enum class GameEventType {
@@ -47,12 +47,27 @@ namespace Win32GameEngine {
 		}
 	};
 
+	class Scene;
+	class Entity;
+
+	class Component : public GameObject<Entity> {
+		//
+	};
+
 	class Entity : public GameObject<Entity, Entity> {
 	public:
-		struct Transform {
-			Vec3F position;
-			Vec2F scale;
-		};
 		Transform transform;
+		Scene *const scene;
+		set<Component *> components;
+		Entity(Scene *const scene) : scene(scene) {}
+		virtual void propagatedown(GameEvent event) override {
+			for(Component *component : components)
+				component->operator()(event);
+			GameObject::propagatedown(event);
+		}
+		template<derived_from<Component> C>
+		void addComponent(C *component) {
+			components.insert(component);
+		}
 	};
 }

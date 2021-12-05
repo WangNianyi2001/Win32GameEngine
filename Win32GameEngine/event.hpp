@@ -46,7 +46,7 @@ namespace Win32GameEngine {
 	// Widow specialization
 	template<derived_from_template<Event> Event, derived_from_template<Receiver> Parent>
 	struct Receiver<Event, Parent, void> : Receiver<Event, void, void> {
-		Parent *parent;
+		Parent *parent = nullptr;
 		virtual void propagateup(Event event) override {
 			Event up = event;
 			up.propagation = EventPropagation::UP;

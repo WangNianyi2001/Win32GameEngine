@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <random>
 #include <initializer_list>
 #include <utility>
 
@@ -21,10 +22,11 @@ namespace Win32GameEngine {
 		T data[D];
 		inline T at(unsigned i) const { return data[i]; }
 		inline T &operator[](unsigned i) { return data[i]; }
-		Vector<T, D>() {}
-		Vector<T, D>(Vector<T, D> const &v) {
+		Vector() {}
+		template<typename U>
+		Vector(Vector<U, D> const &v) {
 			for(unsigned i = 0; i < D; ++i)
-				operator[](i) = v.at(i);
+				operator[](i) = (T)v.at(i);
 		}
 		Vector<T, D>(std::initializer_list<T> list) {
 			T const *arr = list.begin();
@@ -41,7 +43,7 @@ namespace Win32GameEngine {
 		Vector<T, D> operator*(S s) {
 			Vector<T, D> res = *this;
 			for(unsigned i = 0; i < D; ++i)
-				res[i] *= s;
+				res[i] = (T)(res[i] * s);
 			return res;
 		}
 		Vector<T, D> operator-(Vector<T, D> v) {
@@ -49,6 +51,12 @@ namespace Win32GameEngine {
 		}
 	};
 	using Vec2I = Vector<int, 2U>;
+	using Vec2U = Vector<unsigned, 2U>;
 	using Vec2F = Vector<float, 2U>;
 	using Vec3F = Vector<float, 3U>;
+
+	struct Transform {
+		Vec3F position;
+		Vec2F scale;
+	};
 }

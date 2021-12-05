@@ -3,6 +3,9 @@
 #include "window.hpp"
 #include "scene.hpp"
 #include "gameobject.hpp"
+#pragma region components
+#include "camera.hpp"
+#pragma endregion
 
 namespace Win32GameEngine {
 	class Game : public GameObject<void, Scene> {

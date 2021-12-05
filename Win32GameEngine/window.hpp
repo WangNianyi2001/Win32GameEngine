@@ -40,7 +40,7 @@ namespace Win32GameEngine {
 			HBRUSH background_brush = (HBRUSH)GetStockObject(WHITE_BRUSH);
 			ConstString menu_name = nullptr;
 			Vec2I position{ CW_USEDEFAULT, CW_USEDEFAULT };
-			Vec2I size{ 640, 480 };
+			Vec2U size{ 640, 480 };
 			Style style = Style::ASIS;
 		};
 		static inline Vec2I screen{ GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
