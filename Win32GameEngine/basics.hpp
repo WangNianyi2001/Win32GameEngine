@@ -1,7 +1,6 @@
 #pragma once
 
 #include <windows.h>
-#include <random>
 #include <initializer_list>
 #include <utility>
 
@@ -22,6 +21,7 @@ namespace Win32GameEngine {
 		T data[D];
 		inline T at(unsigned i) const { return data[i]; }
 		inline T &operator[](unsigned i) { return data[i]; }
+		inline T const &operator[](unsigned i) const { return data[i]; }
 		Vector() {}
 		template<typename U>
 		Vector(Vector<U, D> const &v) {
@@ -48,6 +48,16 @@ namespace Win32GameEngine {
 		}
 		Vector<T, D> operator-(Vector<T, D> v) {
 			return operator+(v * -1);
+		}
+		bool operator==(Vector<T, D> v) {
+			for(unsigned i = 0; i < D; ++i) {
+				if(data[i] != v.data[i])
+					return false;
+			}
+			return true;
+		}
+		bool operator!=(Vector<T, D> v) {
+			return !(*this == v);
 		}
 	};
 	using Vec2I = Vector<int, 2U>;
