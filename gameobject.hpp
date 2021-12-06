@@ -6,68 +6,48 @@
 
 namespace Win32GameEngine {
 	enum class GameEventType {
-		INIT, KILL,
-		UPDATE, FIXEDUPDATE,
+		UPDATE, POSTUPDATE, FIXEDUPDATE,
+		PAINT,
 		ACTIVATE, INACTIVATE
 	};
 	struct GameEventData {};
 	struct GameEvent : Event<GameEventType, GameEventData> {};
 
-	template<typename Parent = void, typename Child = void>
-	class GameObject : public EventDistributor<GameEvent, Handler<GameEvent>, Parent, Child> {
+	class GameObject : public EventDistributor<GameEvent, Handler<GameEvent>> {
 	private:
 		bool active = true;
 	public:
-		virtual void oninit() {}
-		virtual void onkill() {}
 		virtual void onupdate() {}
+		virtual void onpostupdate() {}
 		virtual void onfixedupdate() {}
+		virtual void onpaint() {}
 		virtual void onactivate() {}
 		virtual void oninactivate() {}
-		GameObject<Parent, Child>() {
-			this->add(GameEventType::INIT, [&](GameEvent) { oninit(); });
-			this->add(GameEventType::KILL, [&](GameEvent) { onkill(); });
+		virtual void onkill() {}
+		GameObject() {
 			this->add(GameEventType::UPDATE, [&](GameEvent) { onupdate(); });
+			this->add(GameEventType::POSTUPDATE, [&](GameEvent) { onpostupdate(); });
 			this->add(GameEventType::FIXEDUPDATE, [&](GameEvent) { onfixedupdate(); });
+			this->add(GameEventType::PAINT, [&](GameEvent) { onpaint(); });
 			this->add(GameEventType::ACTIVATE, [&](GameEvent) { onactivate(); });
 			this->add(GameEventType::INACTIVATE, [&](GameEvent) { oninactivate(); });
+		}
+		virtual ~GameObject() {
+			for(auto child : children)
+				delete child;
 		}
 		inline bool isactive() { return active; }
 		inline void activate() {
 			if(active)
 				return;
 			active = true;
-			onactivate();
+			operator()({ GameEventType::ACTIVATE, EventPropagation::DOWN });
 		}
 		inline void inactivate() {
 			if(!active)
 				return;
 			active = false;
-			oninactivate();
-		}
-	};
-
-	class Scene;
-	class Entity;
-
-	class Component : public GameObject<Entity> {
-		//
-	};
-
-	class Entity : public GameObject<Entity, Entity> {
-	public:
-		Transform transform;
-		Scene *const scene;
-		set<Component *> components;
-		Entity(Scene *const scene) : scene(scene) {}
-		virtual void propagatedown(GameEvent event) override {
-			for(Component *component : components)
-				component->operator()(event);
-			GameObject::propagatedown(event);
-		}
-		template<derived_from<Component> C>
-		void addComponent(C *component) {
-			components.insert(component);
+			operator()({ GameEventType::INACTIVATE, EventPropagation::DOWN });
 		}
 	};
 }

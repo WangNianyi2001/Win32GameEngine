@@ -37,7 +37,7 @@ namespace Win32GameEngine {
 			UINT class_style = CS_HREDRAW | CS_VREDRAW;
 			HICON icon = nullptr, icon_small = nullptr;
 			HCURSOR cursor = nullptr;
-			HBRUSH background_brush = (HBRUSH)GetStockObject(WHITE_BRUSH);
+			HBRUSH background_brush = (HBRUSH)GetStockObject(BLACK_BRUSH);
 			ConstString menu_name = nullptr;
 			Vec2I position{ CW_USEDEFAULT, CW_USEDEFAULT };
 			Vec2U size{ 640, 480 };

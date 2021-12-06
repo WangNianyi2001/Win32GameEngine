@@ -150,12 +150,15 @@
     <ClInclude Include="event.hpp" />
     <ClInclude Include="game.hpp" />
     <ClInclude Include="gameobject.hpp" />
-    <ClInclude Include="scene.hpp" />
     <ClInclude Include="win32ge.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="hello-world-screenshot.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -16,9 +16,6 @@
     <ClInclude Include="event.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="scene.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="basics.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -33,11 +30,19 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{58f9535b-570c-483e-b3e5-64f91c92cbe4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{b5853dd4-6a1a-4490-9662-44b829b37bfa}</UniqueIdentifier>
+    <Filter Include="README">
+      <UniqueIdentifier>{65bf68c8-57cb-4b14-bf33-627281d63b76}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+    <None Include="README.md">
+      <Filter>README</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="hello-world-screenshot.png">
+      <Filter>README</Filter>
+    </Image>
   </ItemGroup>
 </Project>
