@@ -5,6 +5,7 @@
 
 #include "window.hpp"
 #include "gameobject.hpp"
+#include <algorithm>
 
 namespace Win32GameEngine {
 	// The most basic types of game object, listed top-down logically.
@@ -24,6 +25,9 @@ namespace Win32GameEngine {
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				window->update();
 			});
+		}
+		void addscene(Scene *scene) {
+			children.insert((Receiver<GameEvent> *)scene);
 		}
 		virtual void init() {
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
@@ -52,9 +56,20 @@ namespace Win32GameEngine {
 		vector<Entity *> entities;
 		Scene(Game *game) {
 			parent = (Receiver<GameEvent> *)game;
+			game->addscene(this);
+			// Sort by Z coordinate when update
+			add(GameEventType::UPDATE, [&](GameEvent) {
+				sort(entities.begin(), entities.end());
+			});
 		}
 		void addentity(Entity *entity) {
-			entities.push_back(entity);
+			// Insert the new entity to the correct Z-ordered place.
+			auto it = entities.begin();
+			for(auto end = entities.end(); it != end; ++it) {
+				if(entity < *it)
+					break;
+			}
+			entities.insert(it, entity);
 		}
 		virtual void propagatedown(GameEvent event) override {
 			if(!isactive())
@@ -62,8 +77,8 @@ namespace Win32GameEngine {
 			Receiver<GameEvent>::propagatedown(event);
 		}
 		virtual ~Scene() {
-			for(auto entity : entities)
-				delete entity;
+			for(Entity *entity : entities)
+				delete (Receiver<GameEvent> *)entity;
 		}
 	};
 
@@ -78,8 +93,8 @@ namespace Win32GameEngine {
 		set<Component *> components;
 		Entity(Scene *scene) : scene(scene) {}
 		virtual ~Entity() {
-			for(auto component : components)
-				delete component;
+			for(Component *component : components)
+				delete (Receiver<GameEvent> *)component;
 		}
 		virtual void propagateup(GameEvent event) override {
 			Receiver<GameEvent>::propagateup(event);
@@ -90,6 +105,9 @@ namespace Win32GameEngine {
 			for(auto component : components)
 				((Receiver<GameEvent> *)component)->operator()(event);
 			Receiver<GameEvent>::propagatedown(event);
+		}
+		bool operator<(Entity const &entity) const {
+			return transform.position.at(2) < entity.transform.position.at(2);
 		}
 		void setparent(Entity *entity) {
 			if(parent)

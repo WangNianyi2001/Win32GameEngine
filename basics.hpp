@@ -5,6 +5,8 @@
 #include <utility>
 
 namespace Win32GameEngine {
+	using namespace std;
+
 	using String = LPTSTR;
 	using ConstString = LPCTSTR;
 

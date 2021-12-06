@@ -7,8 +7,6 @@
 #include "event.hpp"
 
 namespace Win32GameEngine {
-	using namespace std;
-
 	// Derive a struct from templated struct Event to store
 	// events passed from Win32 API.
 	struct SystemEventData {
@@ -92,7 +90,7 @@ namespace Win32GameEngine {
 				args.size.at(0), args.size.at(1),
 				nullptr, nullptr, nullptr, nullptr
 			);
-			hwnd_map.insert(pair(handle, this));
+			handles.insert(pair(handle, this));
 		}
 		void init() {
 			ShowWindow(handle, SW_SHOW);
