@@ -110,5 +110,12 @@ namespace Win32GameEngine {
 		inline void add(EventType type, Action action) {
 			add(type, new Receiver(action));
 		}
+		~EventDistributor() {
+			for(pair<EventType, set<Receiver *>> it : receivers) {
+				set<Receiver *> &type = it.second;
+				for(Receiver *receiver : type)
+					delete receiver;
+			}
+		}
 	};
 }

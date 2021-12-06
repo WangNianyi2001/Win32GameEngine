@@ -23,7 +23,7 @@ namespace Win32GameEngine {
 			//
 		}
 		virtual void onupdate() override {
-			// resample();
+			resample();
 		}
 		// Temporary painting function
 		void painton(HDC hdc) {
@@ -36,6 +36,7 @@ namespace Win32GameEngine {
 				_hdc, 0, 0, w, h,
 				BLENDFUNCTION{ AC_SRC_OVER, 0, 255, AC_SRC_ALPHA }
 			);
+			DeleteObject(_hdc);
 		}
 		void resample() {
 			for(Index pos{ 0, 0 }; ; ++pos[0]) {
@@ -47,8 +48,6 @@ namespace Win32GameEngine {
 				}
 				bitmap[pos] = sample(pos);
 			}
-			Color a[100];
-			memcpy(a, bitmap.data, sizeof(Color) * 100);
 		}
 	};
 }

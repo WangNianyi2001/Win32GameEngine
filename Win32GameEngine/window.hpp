@@ -8,13 +8,13 @@ namespace Win32GameEngine {
 	using namespace std;
 
 	struct SystemEventData {
-		HWND hWnd;
+		HWND handle;
 		WPARAM wParam;
 		LPARAM lParam;
 	};
 	struct SystemEvent : Event<UINT, SystemEventData> {
 		void defaultBehavior() {
-			DefWindowProc(data.hWnd, type, data.wParam, data.lParam);
+			DefWindowProc(data.handle, type, data.wParam, data.lParam);
 		}
 	};
 	using SystemHandler = Handler<SystemEvent>;
@@ -47,13 +47,13 @@ namespace Win32GameEngine {
 	private:
 		using HWndMap = map<HWND, Window *>;
 		inline static HWndMap hwnd_map = HWndMap();
-		HWND hWnd;
+		HWND handle;
 		InitArg args;
-		static LRESULT CALLBACK event_processor(HWND hWnd, UINT type, WPARAM w, LPARAM l) {
-			auto it = Window::hwnd_map.find(hWnd);
+		static LRESULT CALLBACK event_processor(HWND handle, UINT type, WPARAM w, LPARAM l) {
+			auto it = Window::hwnd_map.find(handle);
 			if(it == Window::hwnd_map.end())
-				return DefWindowProc(hWnd, type, w, l);
-			it->second->events({ type, EventPropagation::NONE, SystemEventData{ hWnd, w, l }});
+				return DefWindowProc(handle, type, w, l);
+			it->second->events({ type, EventPropagation::NONE, SystemEventData{ handle, w, l }});
 			return 0;
 		}
 	public:
@@ -71,16 +71,16 @@ namespace Win32GameEngine {
 				.lpszClassName = args.class_name,
 			};
 			RegisterClass(&window_class);
-			hWnd = CreateWindow(
+			handle = CreateWindow(
 				args.class_name, args.title, WS_POPUP,
 				args.position.at(0), args.position.at(1),
 				args.size.at(0), args.size.at(1),
 				nullptr, nullptr, nullptr, nullptr
 			);
-			hwnd_map.insert(pair(hWnd, this));
+			hwnd_map.insert(pair(handle, this));
 		}
 		void init() {
-			ShowWindow(hWnd, SW_SHOW);
+			ShowWindow(handle, SW_SHOW);
 			switch(args.style) {
 			case Style::CENTERED:
 				center();
@@ -89,7 +89,7 @@ namespace Win32GameEngine {
 				fullscreen();
 				break;
 			}
-			UpdateWindow(hWnd);
+			UpdateWindow(handle);
 		}
 		void update() {
 			MSG message;
@@ -100,18 +100,21 @@ namespace Win32GameEngine {
 		}
 		void fullscreen() {
 			args.size = screen;
-			SetWindowPos(hWnd, nullptr, 0, 0, screen[0], screen[1], SWP_SHOWWINDOW);
+			SetWindowPos(handle, nullptr, 0, 0, screen[0], screen[1], SWP_SHOWWINDOW);
 		}
 		void center() {
 			Vec2I pos = (screen - args.size) * .5f;
-			MoveWindow(hWnd, pos[0], pos[1], args.size[0], args.size[1], FALSE);
+			MoveWindow(handle, pos[0], pos[1], args.size[0], args.size[1], FALSE);
 		}
 		void minimize() {
-			ShowWindow(hWnd, SW_MINIMIZE);
+			ShowWindow(handle, SW_MINIMIZE);
 		}
 		void restore() {
-			ShowWindow(hWnd, SW_RESTORE);
-			BringWindowToTop(hWnd);
+			ShowWindow(handle, SW_RESTORE);
+			BringWindowToTop(handle);
+		}
+		void invalidate(bool erase = false) {
+			InvalidateRect(handle, nullptr, erase);
 		}
 	};
 
