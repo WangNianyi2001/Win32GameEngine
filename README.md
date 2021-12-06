@@ -46,7 +46,7 @@ Game *Win32GameEngine::game = new MyGame();
 ```
 编译运行之，可以看到一个白色的正方形浮在屏幕的正中央：这是这段代码创建的窗体。
 
-![hello-world-screenshot](Images/hello-world-screenshot.png)
+![hello-world-screenshot](hello-world-screenshot.png)
 
 让我们逐行地看看这段代码都写了什么吧！
 
