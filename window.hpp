@@ -1,5 +1,7 @@
 #pragma once
 
+// Agent for a Win32 window. Used by class Game.
+
 #include "basics.hpp"
 #include <windows.h>
 #include "event.hpp"
@@ -7,6 +9,8 @@
 namespace Win32GameEngine {
 	using namespace std;
 
+	// Derive a struct from templated struct Event to store
+	// events passed from Win32 API.
 	struct SystemEventData {
 		HWND handle;
 		WPARAM wParam;
@@ -19,6 +23,8 @@ namespace Win32GameEngine {
 	};
 	using SystemHandler = Handler<SystemEvent>;
 
+	// THE agent class. Provides initialization & simple operations on windows.
+	// Distributes system events to custom handlers.
 	class Window {
 	public:
 		struct Distributor : EventDistributor<SystemEvent> {
@@ -27,6 +33,10 @@ namespace Win32GameEngine {
 			}
 		};
 		Distributor events;
+		// Window styles, can be specified when constructing.
+		// ASIS - set position to explicitly written value,
+		// CENTERED - center window by the screen position,
+		// FULLSCREEN - fill the entire screen with the window.
 		enum class Style {
 			ASIS, CENTERED, FULLSCREEN
 		};
@@ -43,16 +53,21 @@ namespace Win32GameEngine {
 			Vec2U size{ 640, 480 };
 			Style style = Style::ASIS;
 		};
-		static inline Vec2I screen{ GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+		static inline Vec2I screen{	// Screen size.
+			GetSystemMetrics(SM_CXSCREEN),
+			GetSystemMetrics(SM_CYSCREEN)
+		};
 	private:
 		using HWndMap = map<HWND, Window *>;
-		inline static HWndMap hwnd_map = HWndMap();
+		inline static HWndMap handles = HWndMap();	// Reference for callback routing.
 		HWND handle;
-		InitArg args;
+		InitArg args;	// Stores a copy of the initializing arguments for later reference
 		static LRESULT CALLBACK event_processor(HWND handle, UINT type, WPARAM w, LPARAM l) {
-			auto it = Window::hwnd_map.find(handle);
-			if(it == Window::hwnd_map.end())
-				return DefWindowProc(handle, type, w, l);
+			// Look up for corresponding window by handle.
+			// Had to implement this way due to the early age C-style API design.
+			auto it = Window::handles.find(handle);
+			if(it == Window::handles.end())
+				return DefWindowProc(handle, type, w, l);	// If not found, process by default.
 			it->second->events({ type, EventPropagation::NONE, SystemEventData{ handle, w, l }});
 			return 0;
 		}

@@ -1,14 +1,21 @@
 #pragma once
 
+// Basic levels of object organization of the game.
+// Includes a few classes, see below.
+
 #include "window.hpp"
 #include "gameobject.hpp"
 
 namespace Win32GameEngine {
+	// The most basic types of game object, listed top-down logically.
 	class Game;			// void <- Game -> Scene
 	class Scene;		// Game <- Scene -> void (holds entites in a vector)
 	class Entity;		// Entity <- Entity -> Entity (refers to a scene by a pointer)
 	class Component;	// Entity <- Component -> void
 
+	// The instance of the entire game, communicates with the Win32 API,
+	// handles scene management, provides a runtime-long environment for
+	// game objects to interact internally with.
 	class Game : public GameObject {
 	protected:
 		Window *const window;
@@ -37,6 +44,9 @@ namespace Win32GameEngine {
 		}
 	};
 
+	// Physical separation of entities, I'd say.
+	// Different from common frameworks, multiple scenes are
+	// allowed to be activate simutaneously.
 	class Scene : public GameObject {
 	public:
 		vector<Entity *> entities;
@@ -57,6 +67,10 @@ namespace Win32GameEngine {
 		}
 	};
 
+	// Game objects that can exist in a scene, might have children
+	// (whose transforms are set relatively to the parent itself).
+	// Doesn't have to be substantial (fact is that its substantiality
+	// is granted by its components)
 	class Entity : public GameObject {
 	public:
 		Transform transform;
@@ -88,6 +102,7 @@ namespace Win32GameEngine {
 		}
 	};
 
+	// Abilities an entity have, can have no children.
 	class Component : public GameObject {
 	public:
 		Component(Entity *parent) {

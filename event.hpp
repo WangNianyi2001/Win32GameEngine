@@ -1,5 +1,7 @@
 #pragma once
 
+// Interface for the event systems used across the SDK.
+
 #include "basics.hpp"
 #include <map>
 #include <set>
@@ -15,6 +17,10 @@ namespace Win32GameEngine {
 		BOTH = 3
 	} propagation;
 
+	// Basic structure for a single event, templated.
+	// Type is to identify the class of the event, e.g. "update" or "click".
+	// Propagation defines how will the event propagates across parent & children.
+	// Data is a custom structure storing the information that come with the event.
 	template<typename Type, typename Data>
 	struct Event {
 		using _Type = Type;

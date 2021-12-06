@@ -5,17 +5,24 @@
 #include "basics.hpp"
 
 namespace Win32GameEngine {
+	// In-game event types.
+	// Construction & destruction event types are omitted since
+	// they can be achieved equivalently by constructors & destructors.
 	enum class GameEventType {
 		UPDATE, POSTUPDATE, FIXEDUPDATE,
 		PAINT,
 		ACTIVATE, INACTIVATE
 	};
+	// Temporarily set empty. Might be fulfilled in the future.
 	struct GameEventData {};
 	struct GameEvent : Event<GameEventType, GameEventData> {};
 
+	// Abstract class for in-game objects that last long.
+	// Each game object has its own (possible) parent and children.
+	// When events occur, they might propagate along the parent & children.
 	class GameObject : public EventDistributor<GameEvent, Handler<GameEvent>> {
 	private:
-		bool active = true;
+		bool active = true;	// Activation status of a game object. Manipulate activate() and inactivate().
 	public:
 		virtual void onupdate() {}
 		virtual void onpostupdate() {}
@@ -25,6 +32,8 @@ namespace Win32GameEngine {
 		virtual void oninactivate() {}
 		virtual void onkill() {}
 		GameObject() {
+			// Bind events at construction for Unity-style event management.
+			// Event mediums might be applied in the future.
 			this->add(GameEventType::UPDATE, [&](GameEvent) { onupdate(); });
 			this->add(GameEventType::POSTUPDATE, [&](GameEvent) { onpostupdate(); });
 			this->add(GameEventType::FIXEDUPDATE, [&](GameEvent) { onfixedupdate(); });
