@@ -58,7 +58,6 @@ namespace Win32GameEngine {
 	private:
 		using HWndMap = map<HWND, Window *>;
 		inline static HWndMap handles = HWndMap();	// Reference for callback routing.
-		HWND handle;
 		InitArg args;	// Stores a copy of the initializing arguments for later reference
 		static LRESULT CALLBACK event_processor(HWND handle, UINT type, WPARAM w, LPARAM l) {
 			// Look up for corresponding window by handle.
@@ -70,6 +69,7 @@ namespace Win32GameEngine {
 			return 0;
 		}
 	public:
+		HWND handle;
 		Window(InitArg const args) : args(args) {
 			WNDCLASS window_class = {
 				.style = args.class_style,

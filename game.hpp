@@ -20,6 +20,7 @@ namespace Win32GameEngine {
 	class Game : public GameObject {
 	protected:
 		Window *const window;
+		HDC hdc;
 	public:
 		Game(Window *const w) : window(w) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
@@ -43,8 +44,19 @@ namespace Win32GameEngine {
 				}
 				return 0;
 			});
+			window->events.add(WM_PAINT, [&](SystemEvent event) {
+				operator()({ GameEventType::PAINT, EventPropagation::DOWN });
+			});
 			window->events.add(WM_QUIT, defaultQuit);
 			window->init();
+		}
+		virtual void onpaint() override {
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(window->handle, &ps);
+			SelectObject(hdc, GetStockObject(WHITE_BRUSH));
+			int x = rand() % 100;
+			Ellipse(hdc, x, 0, x + 50, 50);
+			EndPaint(window->handle, &ps);
 		}
 	};
 
@@ -62,6 +74,10 @@ namespace Win32GameEngine {
 				sort(entities.begin(), entities.end());
 			});
 		}
+		virtual ~Scene() {
+			for(Entity *entity : entities)
+				delete (Receiver<GameEvent> *)entity;
+		}
 		void addentity(Entity *entity) {
 			// Insert the new entity to the correct Z-ordered place.
 			auto it = entities.begin();
@@ -74,11 +90,12 @@ namespace Win32GameEngine {
 		virtual void propagatedown(GameEvent event) override {
 			if(!isactive())
 				return;
-			Receiver<GameEvent>::propagatedown(event);
+			for(auto entity : entities)
+				((Receiver<GameEvent> *)entity)->operator()(event);
 		}
-		virtual ~Scene() {
-			for(Entity *entity : entities)
-				delete (Receiver<GameEvent> *)entity;
+		template<derived_from<Component> Component>
+		inline Entity *makeSingluar() {
+			return (Entity *)(new Component(new Entity(this)))->parent;
 		}
 	};
 
@@ -91,7 +108,9 @@ namespace Win32GameEngine {
 		Transform transform;
 		Scene *scene;
 		set<Component *> components;
-		Entity(Scene *scene) : scene(scene) {}
+		Entity(Scene *scene) : scene(scene) {
+			scene->addentity(this);
+		}
 		virtual ~Entity() {
 			for(Component *component : components)
 				delete (Receiver<GameEvent> *)component;
@@ -125,6 +144,7 @@ namespace Win32GameEngine {
 	public:
 		Component(Entity *parent) {
 			this->parent = (Receiver<GameEvent> *)parent;
+			parent->addcomponent(this);
 		}
 	};
 }
