@@ -25,7 +25,6 @@ int WINAPI WIN32ENTRY(
 	using namespace Win32GameEngine;
 	if(!game)
 		return 0;
-	game->init();
 	for(; game->isactive(); ) {
 		game->resolve();
 		game->operator()({ GameEventType::UPDATE });

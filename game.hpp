@@ -9,38 +9,27 @@
 
 namespace Win32GameEngine {
 	// The most basic types of game object, listed top-down logically.
-	class Game;			// void <- Game -> Scene
-	class Scene;		// Game <- Scene -> void (holds entites in a vector)
-	class Entity;		// Entity <- Entity -> Entity (refers to a scene by a pointer)
-	class Component;	// Entity <- Component -> void
+	class Game;
+	class Scene;
+	class Entity;
+	class Component;
 
 	// The instance of the entire game, communicates with the Win32 API,
 	// handles scene management, provides a runtime-long environment for
 	// game objects to interact internally with.
-	class Game : public GameObject<void, Scene> {
+	class Game : public GameObject {
 	protected:
 		Window *const window;
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
 	public:
+		set<Scene *> scenes;
 		Game(Window *const w) : window(w) {
-			add(GameEventType::UPDATE, [&](GameEvent) {
-				window->update();
-				add(GameEventType::UPDATE, [&](GameEvent) {
-					window->update();
-				});
-			});
+			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
-				postpone([&]() {
-					EndPaint(window->handle, ps);
-				});
+				postpone([&]() { EndPaint(window->handle, ps); });
 			});
-		}
-		void addscene(Scene *scene) {
-			children.insert(scene);
-		}
-		virtual void init() {
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
 				switch(event.data.wParam) {
 				case SC_RESTORE:
@@ -48,25 +37,25 @@ namespace Win32GameEngine {
 					break;
 				case SC_MINIMIZE:
 					// Minimizing window is prohibited due to restoring problem
-					return 0;
+					return;
 				default:
 					event.defaultBehavior();
 				}
-				return 0;
 			});
-			window->events.add(WM_QUIT, defaultQuit);
-			window->init();
+			window->events.add(WM_DESTROY, [&](SystemEvent) { inactivate(); });
+			window->events.add(WM_QUIT, [&](SystemEvent) { PostQuitMessage(0); });
+		}
+		void addscene(Scene *scene) {
+			scenes.insert(scene);
 		}
 	};
 
-	// Physical separation of entities, I'd say.
-	// Different from common frameworks, multiple scenes are
-	// allowed to be activate simutaneously.
-	class Scene : public GameObject<Game, void> {
+	// Physical separation of entities.
+	class Scene : public GameObject {
 	public:
+		Game *game;
 		vector<Entity *> entities;
-		Scene(Game *game) {
-			parent = game;
+		Scene(Game *game) : game(game) {
 			game->addscene(this);
 			// Sort by Z coordinate when update
 			add(GameEventType::UPDATE, [&](GameEvent) {
@@ -87,20 +76,19 @@ namespace Win32GameEngine {
 			entities.insert(it, entity);
 		}
 		template<derived_from<Component> Component>
-		inline Entity *makeSingluar() {
-			return (Entity *)(new Component(new Entity(this)))->parent;
+		inline Entity *makesingular() {
+			return (new Component(new Entity(this)))->entity;
 		}
 	};
 
-	// Game objects that can exist in a scene, might have children
-	// (whose transforms are set relatively to the parent itself).
-	// Doesn't have to be substantial (fact is that its substantiality
-	// is granted by its components)
-	class Entity : public GameObject<Entity, Entity> {
+	// Game objects that can exist in a scene.
+	class Entity : public GameObject {
 	public:
-		Transform transform;
 		Scene *scene;
 		set<Component *> components;
+		Entity *parent;
+		set<Entity *>children;
+		Transform transform;
 		Entity(Scene *scene) : scene(scene) {
 			scene->addentity(this);
 		}
@@ -108,6 +96,7 @@ namespace Win32GameEngine {
 			for(Component *component : components)
 				delete (Receiver<GameEvent> *)component;
 		}
+		// Less in Z coordinate
 		bool operator<(Entity const &entity) const {
 			return transform.position.at(2) < entity.transform.position.at(2);
 		}
@@ -122,12 +111,12 @@ namespace Win32GameEngine {
 		}
 	};
 
-	// Abilities an entity have, can have no children.
-	class Component : public GameObject<Entity, void> {
+	// Components are the abilities an entity have.
+	class Component : public GameObject {
 	public:
-		Component(Entity *parent) {
-			this->parent = parent;
-			parent->addcomponent(this);
+		Entity *entity;
+		Component(Entity *entity) : entity(entity) {
+			entity->addcomponent(this);
 		}
 	};
 }

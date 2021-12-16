@@ -132,8 +132,6 @@ namespace Win32GameEngine {
 		}
 	};
 
-	auto defaultQuit = [](SystemEvent) {
-		PostQuitMessage(0);
-		return 0;
-	};
+	// Ensure source compiling sequence
+	auto _ = []() {};
 }
