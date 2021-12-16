@@ -32,7 +32,7 @@ namespace Win32GameEngine {
 			});
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
-				postpone([&](GameEvent) {
+				postpone([&]() {
 					EndPaint(window->handle, ps);
 				});
 			});
@@ -86,12 +86,6 @@ namespace Win32GameEngine {
 			}
 			entities.insert(it, entity);
 		}
-		/*virtual void propagatedown(GameEvent event) override {
-			if(!isactive())
-				return;
-			for(auto entity : entities)
-				((Receiver<GameEvent> *)entity)->operator()(event);
-		}*/
 		template<derived_from<Component> Component>
 		inline Entity *makeSingluar() {
 			return (Entity *)(new Component(new Entity(this)))->parent;
@@ -114,16 +108,6 @@ namespace Win32GameEngine {
 			for(Component *component : components)
 				delete (Receiver<GameEvent> *)component;
 		}
-		/*virtual void propagateup(GameEvent event) override {
-			Receiver<GameEvent>::propagateup(event);
-			if(!parent)
-				(*scene)(event);
-		}
-		virtual void propagatedown(GameEvent event) override {
-			for(auto component : components)
-				((Receiver<GameEvent> *)component)->operator()(event);
-			Receiver<GameEvent>::propagatedown(event);
-		}*/
 		bool operator<(Entity const &entity) const {
 			return transform.position.at(2) < entity.transform.position.at(2);
 		}

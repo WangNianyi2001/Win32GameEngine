@@ -10,23 +10,12 @@
 namespace Win32GameEngine {
 	using namespace std;
 
-	enum class EventPropagation {
-		NONE = 0,
-		UP = 1,
-		DOWN = 2,
-		BOTH = 3
-	} propagation;
-
 	// Basic structure for a single event, templated.
 	// Type is to identify the class of the event, e.g. "update" or "click".
-	// Propagation defines how will the event propagates across parent & children.
-	// Data is a custom structure storing the information that come with the event.
 	template<typename Type>
 	struct Event {
 		using _Type = Type;
-		using _Propagation = EventPropagation;
 		Type type;
-		EventPropagation propagation;
 		inline bool operator==(Event<Type> e) {
 			return type == e.type;
 		}
@@ -37,9 +26,30 @@ namespace Win32GameEngine {
 
 	template<derived_from_template<Event> Event>
 	struct Receiver {
-		Receiver() {}
+		struct Postponed {
+			function<void()> action;
+			time_t time;
+		};
+		vector<Postponed> postponeds;
+		Receiver() {
+			postponeds = vector<Postponed>();
+		}
 		virtual void operator()(Event event) = 0;
-		virtual void propagate(Event event) {}
+		void postpone(function<void()> action, time_t time = 0) {
+			Postponed postponed{ action, time };
+			postponeds.push_back(postponed);
+		}
+		void resolve() {
+			for(auto it = postponeds.begin(); it != postponeds.end(); ) {
+				Postponed postponed = *it;
+				if(postponed.time) {	// TODO: time check
+					++it;
+					continue;
+				}
+				it = postponeds.erase(it);
+				postponed.action();
+			}
+		}
 	};
 
 	template<derived_from_template<Event> Event>
@@ -48,7 +58,6 @@ namespace Win32GameEngine {
 		Function f;
 		virtual inline void operator()(Event event) override {
 			f(event);
-			Receiver<Event>::propagate(event);
 		}
 		Handler(Function f) : f(f) {}
 	};
@@ -78,7 +87,6 @@ namespace Win32GameEngine {
 				return miss(event);
 			for(auto receiver : it->second)
 				(*receiver)(event);
-			Win32GameEngine::Receiver<Event>::propagate(event);
 		}
 		void add(EventType type, Receiver *receiver) {
 			auto it = receivers.begin();

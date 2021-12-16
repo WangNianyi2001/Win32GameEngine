@@ -66,7 +66,7 @@ namespace Win32GameEngine {
 			auto it = Window::handles.find(handle);
 			if(it == Window::handles.end())
 				return DefWindowProc(handle, type, w, l);	// If not found, process by default.
-			it->second->events({ type, EventPropagation::NONE, SystemEventData{ handle, w, l }});
+			it->second->events({ type, SystemEventData{ handle, w, l }});
 			return 0;
 		}
 	public:
