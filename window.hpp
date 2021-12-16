@@ -14,7 +14,8 @@ namespace Win32GameEngine {
 		WPARAM wParam;
 		LPARAM lParam;
 	};
-	struct SystemEvent : Event<UINT, SystemEventData> {
+	struct SystemEvent : Event<UINT> {
+		SystemEventData data;
 		void defaultBehavior() {
 			DefWindowProc(data.handle, type, data.wParam, data.lParam);
 		}

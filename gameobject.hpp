@@ -15,19 +15,20 @@ namespace Win32GameEngine {
 		UPDATE, FIXEDUPDATE, POSTPONE,
 		ACTIVATE, INACTIVATE,
 	};
-	// Temporarily set empty. Might be fulfilled in the future.
-	struct GameEventData {};
-	struct GameEvent : Event<GameEventType, GameEventData> {};
+	struct GameEvent : Event<GameEventType> {};
 
 	// Abstract class for in-game objects that last long.
 	// Each game object has its own (possible) parent and children.
 	// When events occur, they might propagate along the parent & children.
+	template<typename Parent, typename Child>
 	class GameObject : public EventDistributor<GameEvent> {
 	public:
 		struct Postponed {
 			Handler<GameEvent> receiver;
 			time_t time;
 		};
+		Parent *parent;
+		set<Child *> children;
 	private:
 		bool active = true;	// Activation status of a game object. Manipulate activate() and inactivate().
 		vector<Postponed> postponed;

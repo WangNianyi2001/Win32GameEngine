@@ -21,46 +21,25 @@ namespace Win32GameEngine {
 	// Type is to identify the class of the event, e.g. "update" or "click".
 	// Propagation defines how will the event propagates across parent & children.
 	// Data is a custom structure storing the information that come with the event.
-	template<typename Type, typename Data>
+	template<typename Type>
 	struct Event {
 		using _Type = Type;
-		using _Data = Data;
 		using _Propagation = EventPropagation;
 		Type type;
 		EventPropagation propagation;
-		Data data;
-		inline bool operator==(Event<Type, Data> e) {
+		inline bool operator==(Event<Type> e) {
 			return type == e.type;
 		}
-		inline bool operator<(Event<Type, Data> e) {
+		inline bool operator<(Event<Type> e) {
 			return type < e.type;
 		}
 	};
 
 	template<derived_from_template<Event> Event>
 	struct Receiver {
-		Receiver *parent;
-		set<Receiver *> children;
-		Receiver(Receiver *parent = nullptr) : parent(parent) {}
+		Receiver() {}
 		virtual void operator()(Event event) = 0;
-		virtual void propagateup(Event event) {
-			Event up = event;
-			up.propagation = EventPropagation::UP;
-			if(parent)
-				(*parent)(up);
-		}
-		virtual void propagatedown(Event event) {
-			Event down = event;
-			down.propagation = EventPropagation::DOWN;
-			for(auto *child : children)
-				(*child)(down);
-		}
-		void propagate(Event event) {
-			if((int)event.propagation & (int)EventPropagation::UP)
-				propagateup(event);
-			if((int)event.propagation & (int)EventPropagation::DOWN)
-				propagatedown(event);
-		}
+		virtual void propagate(Event event) {}
 	};
 
 	template<derived_from_template<Event> Event>
@@ -84,7 +63,7 @@ namespace Win32GameEngine {
 	struct EventDistributor : public Win32GameEngine::Receiver<Event> {
 		using EventType = Event::_Type;
 		map<EventType, set<Receiver *>> receivers;
-		EventDistributor(Receiver *parent = nullptr) : Win32GameEngine::Receiver<Event>(parent) {}
+		EventDistributor() : Win32GameEngine::Receiver<Event>() {}
 		~EventDistributor() {
 			for(pair<EventType, set<Receiver *>> it : receivers) {
 				set<Receiver *> &type = it.second;

@@ -17,7 +17,7 @@ namespace Win32GameEngine {
 	// The instance of the entire game, communicates with the Win32 API,
 	// handles scene management, provides a runtime-long environment for
 	// game objects to interact internally with.
-	class Game : public GameObject {
+	class Game : public GameObject<void, Scene> {
 	protected:
 		Window *const window;
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
@@ -38,7 +38,7 @@ namespace Win32GameEngine {
 			});
 		}
 		void addscene(Scene *scene) {
-			children.insert((Receiver<GameEvent> *)scene);
+			children.insert(scene);
 		}
 		virtual void init() {
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
@@ -62,11 +62,11 @@ namespace Win32GameEngine {
 	// Physical separation of entities, I'd say.
 	// Different from common frameworks, multiple scenes are
 	// allowed to be activate simutaneously.
-	class Scene : public GameObject {
+	class Scene : public GameObject<Game, void> {
 	public:
 		vector<Entity *> entities;
 		Scene(Game *game) {
-			parent = (Receiver<GameEvent> *)game;
+			parent = game;
 			game->addscene(this);
 			// Sort by Z coordinate when update
 			add(GameEventType::UPDATE, [&](GameEvent) {
@@ -86,12 +86,12 @@ namespace Win32GameEngine {
 			}
 			entities.insert(it, entity);
 		}
-		virtual void propagatedown(GameEvent event) override {
+		/*virtual void propagatedown(GameEvent event) override {
 			if(!isactive())
 				return;
 			for(auto entity : entities)
 				((Receiver<GameEvent> *)entity)->operator()(event);
-		}
+		}*/
 		template<derived_from<Component> Component>
 		inline Entity *makeSingluar() {
 			return (Entity *)(new Component(new Entity(this)))->parent;
@@ -102,7 +102,7 @@ namespace Win32GameEngine {
 	// (whose transforms are set relatively to the parent itself).
 	// Doesn't have to be substantial (fact is that its substantiality
 	// is granted by its components)
-	class Entity : public GameObject {
+	class Entity : public GameObject<Entity, Entity> {
 	public:
 		Transform transform;
 		Scene *scene;
@@ -114,7 +114,7 @@ namespace Win32GameEngine {
 			for(Component *component : components)
 				delete (Receiver<GameEvent> *)component;
 		}
-		virtual void propagateup(GameEvent event) override {
+		/*virtual void propagateup(GameEvent event) override {
 			Receiver<GameEvent>::propagateup(event);
 			if(!parent)
 				(*scene)(event);
@@ -123,7 +123,7 @@ namespace Win32GameEngine {
 			for(auto component : components)
 				((Receiver<GameEvent> *)component)->operator()(event);
 			Receiver<GameEvent>::propagatedown(event);
-		}
+		}*/
 		bool operator<(Entity const &entity) const {
 			return transform.position.at(2) < entity.transform.position.at(2);
 		}
@@ -139,10 +139,10 @@ namespace Win32GameEngine {
 	};
 
 	// Abilities an entity have, can have no children.
-	class Component : public GameObject {
+	class Component : public GameObject<Entity, void> {
 	public:
 		Component(Entity *parent) {
-			this->parent = (Receiver<GameEvent> *)parent;
+			this->parent = parent;
 			parent->addcomponent(this);
 		}
 	};
