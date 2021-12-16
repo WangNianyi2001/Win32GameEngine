@@ -16,19 +16,23 @@ namespace Win32GameEngine {
 
 	// Components are the abilities an entity have.
 	class Component : public GameObject {
-	public:
-		Entity *entity;
+		friend Entity;
+	protected:
+		Entity const *entity;
 		Component(Entity *entity) : entity(entity) {}
+	public:
 	};
 
 	// Game objects that can exist in a scene.
 	class Entity : public GameObject {
+		friend Scene;
+	protected:
+		Scene const *scene;
+		Entity(Scene *scene) : scene(scene) {}
 	public:
-		Scene *scene;
 		set<Component *> components;
 		Entity *parent;
 		Transform transform;
-		Entity(Scene *scene) : scene(scene) {}
 		virtual ~Entity() {
 			for(Component *component : components)
 				delete component;
@@ -44,15 +48,17 @@ namespace Win32GameEngine {
 
 	// Physical separation of entities.
 	class Scene : public GameObject {
-	public:
-		Game *game;
-		vector<Entity *> entities;
+		friend Game;
+	protected:
+		Game const *game;
 		Scene(Game *game) : game(game) {
 			// Sort by Z coordinate when update
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				sort(entities.begin(), entities.end());
 			});
 		}
+	public:
+		vector<Entity *> entities;
 		virtual ~Scene() {
 			for(Entity *entity : entities)
 				delete entity;

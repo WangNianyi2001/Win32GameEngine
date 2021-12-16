@@ -30,36 +30,48 @@ namespace Win32GameEngine {
 			for(unsigned i = 0; i < D; ++i)
 				operator[](i) = (T)v.at(i);
 		}
-		Vector<T, D>(std::initializer_list<T> list) {
+		Vector(std::initializer_list<T> list) {
 			T const *arr = list.begin();
 			for(unsigned i = 0, m = std::max(list.size(), D); i < m; ++i)
 				operator[](i) = arr[i];
 		}
-		Vector<T, D> operator+(Vector<T, D> v) {
-			Vector<T, D> res = *this;
+		Vector<T, D> operator+(Vector<T, D> v) const {
+			Vector<T, D> res;
 			for(unsigned i = 0; i < D; ++i)
-				res[i] += v.at(i);
+				res[i] = at(i) + v.at(i);
 			return res;
 		}
 		template<typename S>
-		Vector<T, D> operator*(S s) {
-			Vector<T, D> res = *this;
+		Vector<T, D> operator*(S s) const {
+			Vector<T, D> res;
 			for(unsigned i = 0; i < D; ++i)
-				res[i] = (T)(res[i] * s);
+				res[i] = (T)(at(i) * s);
 			return res;
 		}
-		Vector<T, D> operator-(Vector<T, D> v) {
+		Vector<T, D> operator-(Vector<T, D> v) const {
 			return operator+(v * -1);
 		}
-		bool operator==(Vector<T, D> v) {
+		Vector<T, D> scale(Vector<T, D> v) const {
+			Vector<T, D> res;
+			for(unsigned i = 0; i < D; ++i)
+				res[i] = at(i) * v.at(i);
+			return res;
+		}
+		Vector<T, D> inverse() const {
+			Vector<T, D> res;
+			for(unsigned i = 0; i < D; ++i)
+				res[i] = (T)1 / at(i);
+			return res;
+		}
+		bool operator==(Vector<T, D> v) const {
 			for(unsigned i = 0; i < D; ++i) {
-				if(data[i] != v.data[i])
+				if(at(i) != v.at(i))
 					return false;
 			}
 			return true;
 		}
-		bool operator!=(Vector<T, D> v) {
-			return !(*this == v);
+		bool operator!=(Vector<T, D> v) const {
+			return !operator==(v);
 		}
 	};
 	using Vec2I = Vector<int, 2U>;
@@ -69,6 +81,19 @@ namespace Win32GameEngine {
 
 	struct Transform {
 		Vec3F position;
-		Vec2F scale;
+		Vec3F scale;
+		inline Transform operator*(Transform const &transform) const {
+			return {
+				position.scale(transform.scale) + transform.position,
+				scale.scale(transform.scale)
+			};
+		}
+		inline Transform inverse() const {
+			Vec3F si = scale.inverse();
+			return { si, position.scale(si) * -1 };
+		}
+		inline Transform operator/(Transform const &transform) const {
+			return operator*(transform.inverse());
+		}
 	};
 }
