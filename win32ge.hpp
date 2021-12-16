@@ -26,7 +26,9 @@ int WINAPI WIN32ENTRY(
 	if(!game)
 		return 0;
 	game->init();
-	for(; game->isactive(); )
-		(*game)({ GameEventType::UPDATE, EventPropagation::DOWN });
+	for(; game->isactive(); ) {
+		game->operator()({ GameEventType::POSTPONE, EventPropagation::DOWN });
+		game->operator()({ GameEventType::UPDATE, EventPropagation::DOWN });
+	}
 	return 0;
 }

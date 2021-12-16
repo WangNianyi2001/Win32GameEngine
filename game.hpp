@@ -20,11 +20,21 @@ namespace Win32GameEngine {
 	class Game : public GameObject {
 	protected:
 		Window *const window;
+		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
 	public:
 		Game(Window *const w) : window(w) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				window->update();
+				add(GameEventType::UPDATE, [&](GameEvent) {
+					window->update();
+				});
+			});
+			window->events.add(WM_PAINT, [&](SystemEvent) {
+				hdc = BeginPaint(window->handle, ps);
+				postpone([&](GameEvent) {
+					EndPaint(window->handle, ps);
+				});
 			});
 		}
 		void addscene(Scene *scene) {
@@ -44,19 +54,8 @@ namespace Win32GameEngine {
 				}
 				return 0;
 			});
-			window->events.add(WM_PAINT, [&](SystemEvent event) {
-				operator()({ GameEventType::PAINT, EventPropagation::DOWN });
-			});
 			window->events.add(WM_QUIT, defaultQuit);
 			window->init();
-		}
-		virtual void onpaint() override {
-			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(window->handle, &ps);
-			SelectObject(hdc, GetStockObject(WHITE_BRUSH));
-			int x = rand() % 100;
-			Ellipse(hdc, x, 0, x + 50, 50);
-			EndPaint(window->handle, &ps);
 		}
 	};
 
