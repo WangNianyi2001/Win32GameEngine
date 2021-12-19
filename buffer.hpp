@@ -33,16 +33,16 @@ namespace Win32GameEngine {
 
 	struct Color {
 		using Channel = unsigned __int8;
-		Channel r, g, b, a;
+		Channel r, g, b, Vector;
 		Color() = default;
 		template<typename T>
-		Color(T r, T g, T b, T a) : r(r), g(g), b(b), a(a) {}
+		Color(T r, T g, T b, T Vector) : r(r), g(g), b(b), Vector(Vector) {}
 		Color premul() {
 			return Color{
-				(Channel)(r * a / 0xff),
-				(Channel)(g * a / 0xff),
-				(Channel)(b * a / 0xff),
-				a
+				(Channel)(r * Vector / 0xff),
+				(Channel)(g * Vector / 0xff),
+				(Channel)(b * Vector / 0xff),
+				Vector
 			};
 		}
 	};
