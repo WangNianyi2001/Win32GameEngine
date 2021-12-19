@@ -20,7 +20,7 @@ namespace Win32GameEngine {
 		_derived_from_template<Template>(t);
 	};
 
-	template<unsigned D, typename T, typename Implem = void>
+	template<unsigned D, typename T, typename Impl = void>
 	struct _Vector {
 		static constexpr unsigned dimension = D;
 		virtual T at(unsigned i) const = 0;
@@ -37,55 +37,71 @@ namespace Win32GameEngine {
 			return !operator==(v);
 		}
 		template<typename S>
-		Implem operator*(S s) const {
-			Implem res;
+		Impl operator*(S s) const {
+			Impl res;
 			for(unsigned i = 0; i < D; ++i)
 				res[i] = (T)(at(i) * s);
 			return res;
 		}
 		template<typename V>
-		Implem operator+(V const &v) const {
-			Implem res;
+		Impl operator+(V const &v) const {
+			Impl res;
 			for(unsigned i = 0; i < D; ++i)
 				res[i] = at(i) + v.at(i);
 			return res;
 		}
 		template<typename V>
-		Implem operator-(V const &v) const {
+		Impl operator-(V const &v) const {
 			return operator+(v * -1);
 		}
 		template<typename V>
-		Implem scale(V const &v) const {
-			Implem res;
+		T dot(V const &v) {
+			T res = 0;
+			for(unsigned i = 0; i < D; ++i)
+				res += at(i) * v.at(i);
+			return res;
+		}
+		template<typename V>
+		Impl scale(V const &v) const {
+			Impl res;
 			for(unsigned i = 0; i < D; ++i)
 				res[i] = at(i) * v.at(i);
 			return res;
 		}
-		Implem inverse() const {
-			Implem res;
+		Impl inverse() const {
+			Impl res;
 			for(unsigned i = 0; i < D; ++i)
 				res[i] = (T)1 / at(i);
 			return res;
 		}
 	};
 
-	template<unsigned D, typename T>
-	struct Vector : _Vector<D, T, Vector<D, T>> {
-		T data[D];
-		Vector() {}
+	template<unsigned D, typename T, unsigned step, typename Impl = void>
+	struct VectorAccessor : _Vector<D, T, Impl> {
+		T *data;
+		VectorAccessor(T *data) : data(data) {}
 		template<typename V>
-		Vector(V const &v) {
+		VectorAccessor(V const &v) {
 			for(unsigned i = 0; i < D; ++i)
-				operator[](i) = (T)v.at(i);
+				this->operator[](i) = (T)v.at(i);
 		}
-		Vector(initializer_list<T> list) {
+		virtual inline T at(unsigned i) const override { return data[i * step]; }
+		virtual inline T &operator[](unsigned i) override { return data[i * step]; }
+		virtual inline T const &operator[](unsigned i) const override { return data[i * step]; }
+	};
+
+	template<unsigned D, typename T>
+	struct Vector : VectorAccessor<D, T, 1, Vector<D, T>> {
+		using Base = VectorAccessor<D, T, 1, Vector<D, T>>;
+		Vector() : Base(new T[D]) {}
+		template<typename V>
+		Vector(V const &v) : Base(v) {}
+		Vector(initializer_list<T> list) : Vector() {
 			T const *arr = list.begin();
 			for(unsigned i = 0, m = min(list.size(), D); i < m; ++i)
-				operator[](i) = arr[i];
+				this->operator[](i) = arr[i];
 		}
-		virtual inline T at(unsigned i) const override { return data[i]; }
-		virtual inline T &operator[](unsigned i) override { return data[i]; }
-		virtual inline T const &operator[](unsigned i) const override { return data[i]; }
+		virtual ~Vector() { delete[] this->data; }
 	};
 
 	using Vec2I = Vector<2U, int>;
@@ -103,10 +119,17 @@ namespace Win32GameEngine {
 	struct Matrix : LinearTransform<Vector<ID, T>, Vector<OD, T>> {
 		using In = Vector<ID, T>;
 		using Out = Vector<OD, T>;
+		using Row = VectorAccessor<ID, T, 1, In>;
+		using Col = VectorAccessor<OD, T, ID, Out>;
 		static constexpr unsigned size = ID * OD;
 		T data[size];
+		inline Row row(unsigned i) { return Row((T *)data + i * ID); }
+		inline Col col(unsigned i) { return Col((T *)data + i); }
 		virtual Out operator()(In vector) override {
-			return Out();
+			Out res;
+			for(unsigned i = 0; i < OD; ++i)
+				res[i] = row(i).dot(vector);
+			return res;
 		}
 	};
 
