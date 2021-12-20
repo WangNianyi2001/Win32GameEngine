@@ -150,6 +150,7 @@
     <ClInclude Include="event.hpp" />
     <ClInclude Include="game.hpp" />
     <ClInclude Include="gameobject.hpp" />
+    <ClInclude Include="linear.hpp" />
     <ClInclude Include="win32ge.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>
