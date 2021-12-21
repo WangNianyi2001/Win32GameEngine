@@ -21,6 +21,8 @@ namespace Win32GameEngine {
 		Entity const *entity;
 		Component(Entity *entity) : entity(entity) {}
 	public:
+		template<derived_from<Component> T>
+		inline T *be() const { return dynamic_cast<T *>(this); }
 	};
 
 	// Game objects that can exist in a scene.
@@ -53,6 +55,7 @@ namespace Win32GameEngine {
 			Transform() : position(this, { 0, 0, 0 }), rotation(this, .0f), scale(this, { 1, 1, 1 }) {
 				row(2)[2] = 1;
 			}
+			AffineMatrix<3, float> inverse;
 		protected:
 			friend Attribute<Vec3F>;
 			friend Attribute<float>;
@@ -64,6 +67,7 @@ namespace Win32GameEngine {
 				row(0) = Vec2F{ x * c, -y * s };
 				row(1) = Vec2F{ x * s, y * c };
 				col(3) = position();
+				inverse = AffineMatrix<3, float>::inverse();
 			}
 		} transform;
 		set<Component *> components;
@@ -78,6 +82,15 @@ namespace Win32GameEngine {
 			Component *component = new Component(this, args...);
 			addcomponent(component);
 			return component;
+		}
+		template<derived_from<Component> T>
+		T *getcomponent() {
+			for(Component *component : components) {
+				T *t = component->be();
+				if(t)
+					return t;
+			}
+			return nullptr;
 		}
 	};
 

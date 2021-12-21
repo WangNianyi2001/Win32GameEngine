@@ -1,6 +1,5 @@
 #pragma once
 
-#include "buffer.hpp"
 #include "game.hpp"
 
 namespace Win32GameEngine {
