@@ -83,6 +83,8 @@ namespace Win32GameEngine {
 				this->operator[](i) = array[i];
 		}
 		template<typename V>
+		Vector(V const &ref) { operator=(ref); }
+		template<typename V>
 		Vector<D, T> &operator=(V const &v) {
 			for(unsigned i = 0; i < D; ++i)
 				operator[](i) = (T)v.at(i);
@@ -93,10 +95,14 @@ namespace Win32GameEngine {
 		virtual inline T const &operator[](unsigned i) const override { return data[i]; }
 	};
 
-	template<unsigned D, typename T, unsigned step, typename Impl = void>
+	template<unsigned D, typename T, int step, typename Impl = void>
 	struct VectorAccessor : _Vector<D, T, Impl> {
 		T *const data;
+		VectorAccessor() : data(nullptr) {}
 		VectorAccessor(T *data) : data(data) {}
+		VectorAccessor(VectorAccessor<D, T, step, Impl> const &vector) : VectorAccessor(vector.data) {}
+		template<typename V>
+		VectorAccessor(V const &ref) : VectorAccessor(ref.data) {}
 		template<typename V>
 		VectorAccessor<D, T, step, Impl> &operator=(V const &v) {
 			for(unsigned i = 0; i < D; ++i)
@@ -171,7 +177,53 @@ namespace Win32GameEngine {
 		SquareMatrix(initializer_list<T> list) : Base(list) {}
 		SquareMatrix(initializer_list<initializer_list<T>> list) : Base(list) {}
 		SquareMatrix<D, T> inverse() {
-			// Invert a square matrix by Gaussian elimination
+			using Augmented = Matrix<D, 2U * D, T>;
+			// Invert a square matrix by Gaussian elimination.
+			// Create the augmented matrix.
+			Augmented augmented;
+			for(unsigned i = 0; i < D; ++i) {
+				augmented.col(i) = this->col(i);
+				augmented.col(i + D)[i] = 1;
+			}
+			// Perform Gaussian elimination
+			// Eliminate the bottom-triangle part
+			for(unsigned r = 0; r < D; ++r) {
+				typename Augmented::Row row = augmented.row(r);
+				// Find the first row not above the r-th row
+				// with a non-zero component at r-th column.
+				unsigned _r = r;	// The index of the above-said row.
+				for(; _r < D && augmented.row(_r)[r] == 0; ++_r);
+				// If found, swap it to r-th row.
+				if(_r != r && _r != D) {
+					Vector<2 * D, T> temp = row.deref();
+					row = augmented.row(_r).deref();
+					augmented.row(_r) = temp;
+				}
+				// For each row below the r-th row, eliminate
+				// their component at r-th row.
+				for(_r = r + 1; _r < D; ++_r) {
+					typename Augmented::Row target = augmented.row(_r);
+					target = target - row * (target[r] / row[r]);
+				}
+			}
+			// Eliminate the top-triangle part.
+			for(unsigned r = D - 1; ~r; --r) {
+				typename Augmented::Row row = augmented.row(r);
+				for(unsigned _r = r - 1; ~_r; --_r) {
+					typename Augmented::Row target = augmented.row(_r);
+					target = target - row * (target[r] / row[r]);
+				}
+			}
+			// Scale by inverted diagonal.
+			for(unsigned r = D - 1; ~r; --r) {
+				typename Augmented::Row row = augmented.row(r);
+				row = row * (1 / row[r]);
+			}
+			// Transfer the right part of the augmented matrix into the result.
+			SquareMatrix<D, T> res;
+			for(unsigned i = 0; i < D; ++i)
+				res.col(i) = augmented.col(i + D);
+			return res;
 		}
 	};
 }
