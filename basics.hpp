@@ -12,10 +12,10 @@ namespace Win32GameEngine {
 	using String = LPTSTR;
 	using ConstString = LPCTSTR;
 
-	template <template <typename...> typename Template, typename... Args>
+	template<template <typename...> typename Template, typename... Args>
 	void _derived_from_template(const Template<Args...> &);
 
-	template <typename T, template <typename...> typename Template>
+	template<typename T, template <typename...> typename Template>
 	concept derived_from_template = requires(const T & t) {
 		_derived_from_template<Template>(t);
 	};

@@ -31,11 +31,43 @@ namespace Win32GameEngine {
 		Entity(Scene *scene) : scene(scene) {}
 	public:
 		struct Transform : AffineMatrix<3, float> {
-			//
-		};
+			template<typename T>
+			struct Attribute {
+			protected:
+				T value;
+				Transform *const transform;
+			public:
+				Attribute(Transform *t, T const &v) : transform(t) {
+					operator=(v);
+				}
+				inline T operator()() { return value; }
+				Attribute<T> &operator=(T const &v) {
+					value = v;
+					transform->update();
+					return *this;
+				}
+			};
+			Attribute<Vec3F> position;
+			Attribute<float> rotation;
+			Attribute<Vec3F> scale;
+			Transform() : position(this, { 0, 0, 0 }), rotation(this, .0f), scale(this, { 1, 1, 1 }) {
+				row(2)[2] = 1;
+			}
+		protected:
+			friend Attribute<Vec3F>;
+			friend Attribute<float>;
+			void update() {
+				float rot = rotation();
+				Vec3F sca = scale();
+				float c = cos(rot), s = sin(rot);
+				float x = sca[0], y = sca[1];
+				row(0) = Vec2F{ x * c, -y * s };
+				row(1) = Vec2F{ x * s, y * c };
+				col(3) = position();
+			}
+		} transform;
 		set<Component *> components;
 		Entity *parent;
-		Transform transform;
 		virtual ~Entity() {
 			for(Component *component : components)
 				delete component;
