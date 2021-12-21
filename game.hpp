@@ -30,6 +30,9 @@ namespace Win32GameEngine {
 		Scene const *scene;
 		Entity(Scene *scene) : scene(scene) {}
 	public:
+		struct Transform : SquareMatrix<4, float> {
+			//
+		};
 		set<Component *> components;
 		Entity *parent;
 		Transform transform;
