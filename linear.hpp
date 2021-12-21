@@ -105,7 +105,8 @@ namespace Win32GameEngine {
 		VectorAccessor(V const &ref) : VectorAccessor(ref.data) {}
 		template<typename V>
 		VectorAccessor<D, T, step, Impl> &operator=(V const &v) {
-			for(unsigned i = 0; i < D; ++i)
+			constexpr unsigned m = min(v.dimension, D);
+			for(unsigned i = 0; i < m; ++i)
 				operator[](i) = (T)v.at(i);
 			return *this;
 		}
@@ -146,6 +147,10 @@ namespace Win32GameEngine {
 			for(unsigned i = 0; i < size; ++i)
 				data[i] = 0;
 		}
+		Matrix(Matrix<OD, ID, T> const &matrix) {
+			for(unsigned i = 0; i < size; ++i)
+				data[i] = matrix.data[i];
+		}
 		Matrix(initializer_list<T> list) : Matrix() {
 			T const *arr = list.begin();
 			for(unsigned i = 0, m = min(list.size(), size); i < m; ++i)
@@ -162,7 +167,7 @@ namespace Win32GameEngine {
 		}
 		inline Row row(unsigned i) const { return Row((T *)data + i * ID); }
 		inline Col col(unsigned i) const { return Col((T *)data + i); }
-		virtual Out operator()(In vector) override {
+		Out operator()(In vector) override {
 			Out res;
 			for(unsigned i = 0; i < OD; ++i)
 				res[i] = row(i).dot(vector);
@@ -174,6 +179,7 @@ namespace Win32GameEngine {
 	struct SquareMatrix : Matrix<D, D, T> {
 		using Base = Matrix<D, D, T>;
 		SquareMatrix() : Base() {}
+		SquareMatrix(Matrix<D, D, T> const &matrix) : Base(matrix) {}
 		SquareMatrix(initializer_list<T> list) : Base(list) {}
 		SquareMatrix(initializer_list<initializer_list<T>> list) : Base(list) {}
 		SquareMatrix<D, T> inverse() {
@@ -181,13 +187,13 @@ namespace Win32GameEngine {
 			// Invert a square matrix by Gaussian elimination.
 			// Create the augmented matrix.
 			Augmented augmented;
-			for(unsigned i = 0; i < D; ++i) {
-				augmented.col(i) = this->col(i);
-				augmented.col(i + D)[i] = 1;
+			for(unsigned c = 0; c ^ D; ++c) {
+				augmented.col(c) = this->col(c);
+				augmented.col(c + D)[c] = 1;
 			}
-			// Perform Gaussian elimination
+			// Perform Gaussian elimination.
 			// Eliminate the bottom-triangle part
-			for(unsigned r = 0; r < D; ++r) {
+			for(unsigned r = 0; r ^ D; ++r) {
 				typename Augmented::Row row = augmented.row(r);
 				// Find the first row not above the r-th row
 				// with a non-zero component at r-th column.
@@ -215,7 +221,7 @@ namespace Win32GameEngine {
 				}
 			}
 			// Scale by inverted diagonal.
-			for(unsigned r = D - 1; ~r; --r) {
+			for(unsigned r = 0; r ^ D; ++r) {
 				typename Augmented::Row row = augmented.row(r);
 				row = row * (1 / row[r]);
 			}
@@ -225,5 +231,32 @@ namespace Win32GameEngine {
 				res.col(i) = augmented.col(i + D);
 			return res;
 		}
+	};
+
+	template<unsigned D, typename T>
+	struct AffineMatrix : SquareMatrix<D + 1, T> {
+		using Base = SquareMatrix<D + 1, T>;
+		using Param = Vector<D, T>;
+		using Affined = Vector<D + 1, T>;
+		AffineMatrix() : Base() {
+			this->data[D * (D + 2)] = 1;
+		}
+		AffineMatrix(SquareMatrix<D + 1, T> const &matrix) : Base(matrix) {
+			typename Base::Row row = this->row(D);
+			for(unsigned c = 0; c < D; ++c)
+				row[c] = 0;
+			row[D] = 1;
+		}
+		AffineMatrix(SquareMatrix<D, T> const &linear, Vector<D, T> const &bias) : AffineMatrix() {
+			for(unsigned r = 0; r < D; ++r)
+				this->row(r) = linear.row(r);
+			this->col(D) = bias;
+		}
+		Param operator()(Param param) {
+			Affined affined = param;
+			affined[D] = 1;
+			return Param(Base::operator()(affined));
+		}
+		inline AffineMatrix<D, T> inverse() { return Base::inverse(); }
 	};
 }
