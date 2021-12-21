@@ -160,8 +160,8 @@ namespace Win32GameEngine {
 					_row[j] = arr[j];
 			}
 		}
-		inline Row row(unsigned i) { return Row((T *)data + i * ID); }
-		inline Col col(unsigned i) { return Col((T *)data + i); }
+		inline Row row(unsigned i) const { return Row((T *)data + i * ID); }
+		inline Col col(unsigned i) const { return Col((T *)data + i); }
 		virtual Out operator()(In vector) override {
 			Out res;
 			for(unsigned i = 0; i < OD; ++i)
