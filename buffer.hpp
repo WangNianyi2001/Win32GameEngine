@@ -38,8 +38,8 @@ namespace Win32GameEngine {
 		using Channel = unsigned __int8;
 		Channel b, g, r, a;
 		Color() = default;
-		template<typename T>
-		Color(T r, T g, T b, T Vector) : r(r), g(g), b(b), a(a) {}
+		Color(Channel r, Channel g, Channel b, Channel a) : r(r), g(g), b(b), a(a) {}
+		Color(Channel r, Channel g, Channel b) : Color(r, g, b, 255U) {}
 		Color operator+(Color const &c) {
 			return c;	// TODO
 		}

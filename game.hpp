@@ -50,10 +50,8 @@ namespace Win32GameEngine {
 		struct Transform : AffineMatrix<3, float> {
 			template<typename T>
 			struct Attribute {
-			protected:
-				T value;
 				Transform *const transform;
-			public:
+				T value;
 				Attribute(Transform *t, T const &v) : transform(t) {
 					operator=(v);
 				}
@@ -107,6 +105,9 @@ namespace Win32GameEngine {
 			}
 			return nullptr;
 		}
+		inline bool operator<(Entity const &entity) {
+			return entity.transform.position.value[2] < transform.position.value[2];
+		}
 	};
 
 	// Physical separation of entities.
@@ -116,7 +117,6 @@ namespace Win32GameEngine {
 		Scene(Game *game) : game(game) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				// Sort entities by Z coordinate
-				sort(entities.begin(), entities.end());
 				for(Entity *entity : entities)
 					entity->operator()({ GameEventType::UPDATE });
 			});
@@ -125,6 +125,7 @@ namespace Win32GameEngine {
 					entity->operator()({ GameEventType::FIXEDUPDATE });
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
+				sort(entities.begin(), entities.end(), [](Entity *a, Entity *b) { return *a < *b; });
 				for(Entity *entity : entities)
 					entity->operator()({ GameEventType::PAINT });
 			});
@@ -136,15 +137,7 @@ namespace Win32GameEngine {
 			for(Entity *entity : entities)
 				delete entity;
 		}
-		void addentity(Entity *entity) {
-			// Insert the new entity to the correct Z-ordered place.
-			auto it = entities.begin();
-			for(auto end = entities.end(); it != end; ++it) {
-				if(entity < *it)
-					break;
-			}
-			entities.insert(it, entity);
-		}
+		inline void addentity(Entity *entity) { entities.push_back(entity); }
 		inline Entity *makeentity() {
 			Entity *entity = new Entity(this);
 			addentity(entity);

@@ -35,14 +35,20 @@ namespace Win32GameEngine {
 	
 	class UV : public Component {
 	public:
-		UV(Entity *parent) : Component(parent) {
-			//
-		}
+		UV(Entity *parent) : Component(parent) {}
 		RectBound<float> getbound() const {
 			return RectBound<float>({ -1.f, -1.f }, { 1.f, 1.f });
 		}
-		Color sample(Vec2F uv) const {
-			return Color{ 255, 0, 0, 255 };
+		virtual Color sample(Vec2F uv) const = 0;
+	};
+
+	class PureBlock : public UV {
+	public:
+		Color color;
+		PureBlock(Entity *parent) : UV(parent) {}
+		PureBlock(Entity *parent, Color color) : UV(parent), color(color) {}
+		inline virtual Color sample(Vec2F uv) const override {
+			return color;
 		}
 	};
 }
