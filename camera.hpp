@@ -27,10 +27,12 @@ namespace Win32GameEngine {
 			return camerap * (1 / camerap[2]);
 		}
 		Vec2I buffer_shift;
+		float pixel_scale;
 	public:
-		Camera(Entity *entity, Vec2U dimension) :
+		Camera(Entity *entity, Vec2U dimension, float view_size) :
 			Component(entity), Bitmap(dimension) {
 			buffer_shift = Vec2F(dimension) * .5f;
+			setviewsize(view_size);
 			add(GameEventType::PAINT, [=](GameEvent) {
 				Scene *scene = entity->scene;
 				sort(scene->solid_entities.begin(), scene->solid_entities.end(), [](Entity *a, Entity *b) {
@@ -47,11 +49,16 @@ namespace Win32GameEngine {
 				DeleteObject(com);
 			});
 		}
+		inline float setviewsize(float view_size) {
+			return pixel_scale = view_size / dimension.module();
+		}
+		inline float setfov(float fov) { setviewsize(tan(fov)); }
+		inline float setfovindegree(int fov) { setviewsize(tan(fov * (atan(1) / 90))); }
 		inline Vec2I screen_buffer(Vec2F screenp) const {
-			return screenp + buffer_shift;
+			return screenp * (1 / pixel_scale) + buffer_shift;
 		}
 		inline Vec2F buffer_screen(Vec2I bufferp) const {
-			return bufferp - buffer_shift;
+			return (bufferp - buffer_shift) * pixel_scale;
 		}
 		void sample() {
 			clear();
@@ -74,8 +81,8 @@ namespace Win32GameEngine {
 					ymax = screenb.max[1],
 					xmin = screenb.min[0],
 					xmax = screenb.max[0];
-				for(float y = ymin; y < ymax; ++y) {
-					for(float x = xmin; x < xmax; ++x) {
+				for(float y = ymin; y < ymax; y += pixel_scale) {
+					for(float x = xmin; x < xmax; x += pixel_scale) {
 						Vec2F screenp{ x, y };
 						Color *target = at(screen_buffer(screenp));
 						if(!target)

@@ -41,11 +41,14 @@ namespace Win32GameEngine {
 			return operator+(v * -1);
 		}
 		template<typename V>
-		T dot(V const &v) {
+		T dot(V const &v) const {
 			T res = 0;
 			for(unsigned i = 0; i < D; ++i)
 				res += at(i) * v.at(i);
 			return res;
+		}
+		T module() const {
+			return sqrt(dot(*this));
 		}
 		template<typename V>
 		Impl scale(V const &v) const {
