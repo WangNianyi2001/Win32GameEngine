@@ -32,6 +32,14 @@ namespace Win32GameEngine {
 			res.add(f(bottomright()));
 			return res;
 		}
+		RectBound clip(RectBound r) {
+			RectBound res;
+			res.min[0] = std::max(r.min[0], min[0]);
+			res.min[1] = std::max(r.min[1], min[1]);
+			res.max[0] = std::min(r.max[0], max[0]);
+			res.max[1] = std::min(r.max[1], max[1]);
+			return res;
+		}
 	};
 	
 	class UV : public Component {

@@ -37,7 +37,7 @@ namespace Win32GameEngine {
 					float
 						az = a->getcomponent<Transform>()->position.value[2],
 						bz = b->getcomponent<Transform>()->position.value[2];
-					return az < bz;
+					return az > bz;
 				});
 				sample();
 				HDC hdc = scene->game->gethdc();
@@ -48,11 +48,15 @@ namespace Win32GameEngine {
 			});
 		}
 		inline Vec2I screen_buffer(Vec2F screenp) const {
-			return buffer_shift + screenp;
+			return screenp + buffer_shift;
+		}
+		inline Vec2F buffer_screen(Vec2I bufferp) const {
+			return bufferp - buffer_shift;
 		}
 		void sample() {
 			clear();
 			Transform &self_transform = *entity->getcomponent<Transform>();
+			RectBound screen_clip{ buffer_screen({ 0, 0 }), buffer_screen(dimension) };
 			for(Entity *const entity : entity->scene->solid_entities) {
 				UV *const uv = entity->getcomponent<UV>();
 				if(!uv)
@@ -62,7 +66,9 @@ namespace Win32GameEngine {
 				SquareMatrix<4, float>
 					camera_entity = entity->getcomponent<Transform>()->inverse.compose(self_transform),
 					entity_camera = camera_entity.inverse();
-				RectBound screenb = uv->bound.transform(bind_front(uv_screen, entity_camera));
+				RectBound screenb = uv->bound
+					.transform(bind_front(uv_screen, entity_camera))
+					.clip(screen_clip);
 				float const
 					ymin = screenb.min[1],
 					ymax = screenb.max[1],
