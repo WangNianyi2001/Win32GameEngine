@@ -45,7 +45,11 @@ namespace Win32GameEngine {
 	class UV : public Component {
 	public:
 		RectBound bound;
-		UV(Entity *parent, RectBound bound) : Component(parent), bound(bound) {}
+		Vec2F size, anchor;
+		UV(Entity *entity, Vec2F size, Vec2F anchor) :
+			Component(entity), size(size), anchor(anchor),
+			bound(RectBound(anchor * -1, size - anchor)) {
+		}
 		virtual bool hit(Vec2F uv) const {
 			float x = uv[0], y = uv[1];
 			return (x < bound.max[0]) && (x >= bound.min[0]) && (y < bound.max[1]) && (y >= bound.min[1]);
@@ -53,11 +57,28 @@ namespace Win32GameEngine {
 		virtual Color sample(Vec2F uv) const = 0;
 	};
 
-	class PureBlock : public UV {
+	class SolidBlock : public UV {
 	public:
 		Color color;
-		PureBlock(Entity *parent, Vec2F size, Color color) :
-			UV(parent, RectBound({ -size[0] / 2, -size[1] / 2 }, { size[0] / 2, size[1] / 2 })), color(color) {}
+		SolidBlock(Entity *entity, Color color, Vec2F size, Vec2F anchor) :
+			UV(entity, size, anchor), color(color) {
+		}
+		SolidBlock(Entity *entity, Color color, Vec2F size) : SolidBlock(entity, color, size, size * .5f) {}
 		inline virtual Color sample(Vec2F uv) const override { return color; }
+	};
+
+	class Sprite : public UV {
+	public:
+		Bitmap bitmap;
+		Sprite(Entity *entity, Bitmap const &bitmap, Vec2F anchor) :
+			UV(entity, bitmap.dimension, anchor), bitmap(bitmap) {
+		}
+		Sprite(Entity *entity, Bitmap const &bitmap) : Sprite(entity, bitmap, bitmap.dimension * .5f) {}
+		inline virtual Color sample(Vec2F uv) const override {
+			Color *color = bitmap.at(uv + anchor);
+			if(!color)
+				return Color();
+			return *color;
+		}
 	};
 }

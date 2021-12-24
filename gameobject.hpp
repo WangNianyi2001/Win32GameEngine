@@ -20,9 +20,12 @@ namespace Win32GameEngine {
 	// Abstract class for in-game objects that last long.
 	class GameObject : public EventDistributor<GameEvent> {
 	private:
-		bool active = true;	// Activation status of a game object. Manipulate activate() and inactivate().
+		bool active;	// Activation status of a game object. Manipulate activate() and inactivate().
 	public:
-		GameObject() {}
+		GameObject(bool active = true) : active(false) {
+			if(active)
+				activate();
+		}
 		inline bool isactive() { return active; }
 		inline void activate() {
 			if(active)

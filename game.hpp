@@ -116,18 +116,20 @@ namespace Win32GameEngine {
 	// game objects to interact internally with.
 	class Game : public GameObject {
 	protected:
-		Window *const window;
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
 		ULONGLONG const start_tick;
 		ULONGLONG last_tick;
 	public:
+		Window *const window;
 		set<Scene *> scenes;
-		Game(Window *const w) : window(w), start_tick(gettick()), last_tick(start_tick) {
+		Game(Window *const w) : GameObject(false), window(w), start_tick(gettick()), last_tick(start_tick) {
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
-				postpone([&]() { operator()({ GameEventType::PAINT }); });
+				postpone([&]() {
+					operator()({ GameEventType::PAINT });
+				});
 				postpone([&]() { EndPaint(window->handle, ps); });
 			});
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {

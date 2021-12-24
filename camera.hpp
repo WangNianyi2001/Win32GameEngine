@@ -14,6 +14,7 @@ namespace Win32GameEngine {
 			top[2] = 1;
 			Vec4F bottom{ 0, 0, 0, 1 };
 			//float z = -camera_entity(top)[2] / camera_entity(bottom)[2];
+			// Technically incorrect, but works for camera-aligned cases.
 			float z = -camera_entity.data[11];
 			top = top * z + bottom;
 			return camera_entity(top);
@@ -67,8 +68,6 @@ namespace Win32GameEngine {
 			for(Entity *const entity : entity->scene->solid_entities) {
 				UV *const uv = entity->getcomponent<UV>();
 				if(!uv)
-					continue;
-				if(uv->entity->getcomponent<Transform>()->position.value[2] <= 0)
 					continue;
 				SquareMatrix<4, float>
 					camera_entity = entity->getcomponent<Transform>()->inverse.compose(self_transform),

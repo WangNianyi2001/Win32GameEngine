@@ -24,9 +24,14 @@ int WINAPI WIN32ENTRY(
 	using namespace Win32GameEngine;
 	if(!game)
 		return 0;
-	for(; game->isactive(); ) {
-		game->resolve();
-		game->operator()({ GameEventType::UPDATE });
+	try {
+		game->activate();
+		for(; game->isactive(); ) {
+			game->resolve();
+			game->operator()({ GameEventType::UPDATE });
+		}
+	} catch(ConstString msg) {
+		MessageBox(game->window->handle, msg, L"Error", MB_OK);
 	}
 	return 0;
 }
