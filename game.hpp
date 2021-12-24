@@ -33,52 +33,20 @@ namespace Win32GameEngine {
 	protected:
 		Entity(Scene *scene) : scene(scene) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
-				for(Component *component : components)
-					component->operator()({ GameEventType::UPDATE });
+				for(Component *component : components) {
+					if(component->isactive())
+						component->operator()({ GameEventType::UPDATE });
+				}
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
-				for(Component *component : components)
-					component->operator()({ GameEventType::PAINT });
+				for(Component *component : components) {
+					if(component->isactive())
+						component->operator()({ GameEventType::PAINT });
+				}
 			});
 		}
 	public:
 		Scene *const scene;
-		struct Transform : AffineMatrix<3, float> {
-			template<typename T>
-			struct Attribute {
-				Transform *const transform;
-				T value;
-				Attribute(Transform *t, T const &v) : transform(t) {
-					operator=(v);
-				}
-				inline T operator()() { return value; }
-				Attribute<T> &operator=(T const &v) {
-					value = v;
-					transform->update();
-					return *this;
-				}
-			};
-			Attribute<Vec3F> position;
-			Attribute<float> rotation;
-			Attribute<Vec3F> scale;
-			Transform() : position(this, { 0, 0, 0 }), rotation(this, .0f), scale(this, { 1, 1, 1 }) {
-				row(2)[2] = 1;
-			}
-			AffineMatrix<3, float> inverse;
-		protected:
-			friend Attribute<Vec3F>;
-			friend Attribute<float>;
-			void update() {
-				float rot = rotation();
-				Vec3F sca = scale();
-				float c = cos(rot), s = sin(rot);
-				float x = sca[0], y = sca[1];
-				row(0) = Vec2F{ x * c, -y * s };
-				row(1) = Vec2F{ x * s, y * c };
-				col(3) = position();
-				inverse = AffineMatrix<3, float>::inverse();
-			}
-		} transform;
 		set<Component *> components;
 		Entity *parent;
 		virtual ~Entity() {
@@ -101,9 +69,6 @@ namespace Win32GameEngine {
 			}
 			return nullptr;
 		}
-		inline bool operator<(Entity const &entity) {
-			return entity.transform.position.value[2] < transform.position.value[2];
-		}
 	};
 
 	// Physical separation of entities.
@@ -112,23 +77,27 @@ namespace Win32GameEngine {
 	protected:
 		Scene(Game *game) : game(game) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
-				for(Entity *entity : entities)
-					entity->operator()({ GameEventType::UPDATE });
+				for(Entity *entity : entities) {
+					if(entity->isactive())
+						entity->operator()({ GameEventType::UPDATE });
+				}
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
-				sort(entities.begin(), entities.end(), [](Entity *a, Entity *b) { return *a < *b; });
-				for(Entity *entity : entities)
-					entity->operator()({ GameEventType::PAINT });
+				for(Entity *entity : entities) {
+					if(entity->isactive())
+						entity->operator()({ GameEventType::PAINT });
+				}
 			});
 		}
 	public:
 		Game *const game;
-		vector<Entity *> entities;
+		set<Entity *> entities;
+		vector<Entity *> solid_entities;
 		virtual ~Scene() {
 			for(Entity *entity : entities)
 				delete entity;
 		}
-		inline void addentity(Entity *entity) { entities.push_back(entity); }
+		inline void addentity(Entity *entity) { entities.insert(entity); }
 		inline Entity *makeentity() {
 			Entity *entity = new Entity(this);
 			addentity(entity);
@@ -176,13 +145,17 @@ namespace Win32GameEngine {
 			window->events.add(WM_DESTROY, [&](SystemEvent) { inactivate(); });
 			window->events.add(WM_QUIT, [&](SystemEvent) { PostQuitMessage(0); });
 			add(GameEventType::UPDATE, [&](GameEvent) {
-				for(Scene *scene : scenes)
-					scene->operator()({ GameEventType::UPDATE });
+				for(Scene *scene : scenes) {
+					if(scene->isactive())
+						scene->operator()({ GameEventType::UPDATE });
+				}
 				last_tick = gettick();
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
-				for(Scene *scene : scenes)
-					scene->operator()({ GameEventType::PAINT });
+				for(Scene *scene : scenes) {
+					if(scene->isactive())
+						scene->operator()({ GameEventType::PAINT });
+				}
 			});
 		}
 		void addscene(Scene *scene) { scenes.insert(scene); }

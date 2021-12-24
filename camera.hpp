@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game.hpp"
+#include "transform.hpp"
 #include "uv.hpp"
 
 namespace Win32GameEngine {
@@ -30,8 +31,15 @@ namespace Win32GameEngine {
 			Component(entity), Bitmap(dimension) {
 			buffer_shift = Vec2F(dimension) * .5f;
 			add(GameEventType::PAINT, [=](GameEvent) {
+				Scene *scene = entity->scene;
+				sort(scene->solid_entities.begin(), scene->solid_entities.end(), [](Entity *a, Entity *b) {
+					float
+						az = a->getcomponent<Transform>()->position.value[2],
+						bz = b->getcomponent<Transform>()->position.value[2];
+					return az < bz;
+				});
 				sample();
-				HDC hdc = entity->scene->game->gethdc();
+				HDC hdc = scene->game->gethdc();
 				HDC com = CreateCompatibleDC(hdc);
 				SelectObject(com, gethandle());
 				BitBlt(hdc, 0, 0, dimension[0], dimension[1], com, 0, 0, SRCCOPY);
@@ -43,15 +51,15 @@ namespace Win32GameEngine {
 		}
 		void sample() {
 			clear();
-			Entity::Transform &self_transform = entity->transform;
-			for(Entity *const entity : entity->scene->entities) {
+			Transform &self_transform = *entity->getcomponent<Transform>();
+			for(Entity *const entity : entity->scene->solid_entities) {
 				UV *const uv = entity->getcomponent<UV>();
 				if(!uv)
 					continue;
-				if(uv->entity->transform.position.value[2] <= 0)
+				if(uv->entity->getcomponent<Transform>()->position.value[2] <= 0)
 					continue;
 				SquareMatrix<4, float>
-					camera_entity = entity->transform.inverse.compose(self_transform),
+					camera_entity = entity->getcomponent<Transform>()->inverse.compose(self_transform),
 					entity_camera = camera_entity.inverse();
 
 				RectBound uvb = uv->getbound();

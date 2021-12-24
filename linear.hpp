@@ -132,9 +132,6 @@ namespace Win32GameEngine {
 		virtual Out operator()(In ...) const = 0;
 	};
 
-	template<typename T>
-	using Transform = Map<T, T>;
-
 	template<unsigned OD, unsigned ID, typename T>
 	struct Matrix : Map<Vector<OD, T>, Vector<ID, T>> {
 		using In = Vector<ID, T>;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game.hpp"
+#include "transform.hpp"
 #include "buffer.hpp"
 
 namespace Win32GameEngine {
@@ -37,7 +38,7 @@ namespace Win32GameEngine {
 	public:
 		UV(Entity *parent) : Component(parent) {}
 		RectBound getbound() const {
-			auto s = entity->transform.scale.value;
+			auto s = entity->getcomponent<Transform>()->scale.value;
 			return RectBound({ -s[0], -s[1] }, { s[0], s[1] });
 		}
 		virtual bool inbound(Vec2F uv) {
