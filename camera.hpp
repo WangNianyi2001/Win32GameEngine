@@ -13,7 +13,8 @@ namespace Win32GameEngine {
 			Vec4F top = screenp;
 			top[2] = 1;
 			Vec4F bottom{ 0, 0, 0, 1 };
-			float z = -camera_entity(top)[2] / camera_entity(bottom)[2];
+			//float z = -camera_entity(top)[2] / camera_entity(bottom)[2];
+			float z = -camera_entity.data[11];
 			top = top * z + bottom;
 			return camera_entity(top);
 		}
@@ -61,9 +62,7 @@ namespace Win32GameEngine {
 				SquareMatrix<4, float>
 					camera_entity = entity->getcomponent<Transform>()->inverse.compose(self_transform),
 					entity_camera = camera_entity.inverse();
-
-				RectBound uvb = uv->getbound();
-				RectBound screenb = uvb.transform(bind_front(uv_screen, entity_camera));
+				RectBound screenb = uv->bound.transform(bind_front(uv_screen, entity_camera));
 				float const
 					ymin = screenb.min[1],
 					ymax = screenb.max[1],
@@ -76,7 +75,7 @@ namespace Win32GameEngine {
 						if(!target)
 							continue;
 						Vec2F uvp = screen_uv(camera_entity, screenp);
-						if(uv->inbound(uvp))
+						if(uv->hit(uvp))
 							*target = *target + uv->sample(uvp);
 					}
 				}

@@ -36,15 +36,11 @@ namespace Win32GameEngine {
 	
 	class UV : public Component {
 	public:
-		UV(Entity *parent) : Component(parent) {}
-		RectBound getbound() const {
-			auto s = entity->getcomponent<Transform>()->scale.value;
-			return RectBound({ -s[0], -s[1] }, { s[0], s[1] });
-		}
-		virtual bool inbound(Vec2F uv) {
-			RectBound bound = RectBound({ -1, -1 }, { 1, 1 });
+		RectBound bound;
+		UV(Entity *parent, RectBound bound) : Component(parent), bound(bound) {}
+		virtual bool hit(Vec2F uv) const {
 			float x = uv[0], y = uv[1];
-			return x < bound.max[0] && x >= bound.min[0] && y < bound.max[1] && y >= bound.min[1];
+			return (x < bound.max[0]) && (x >= bound.min[0]) && (y < bound.max[1]) && (y >= bound.min[1]);
 		}
 		virtual Color sample(Vec2F uv) const = 0;
 	};
@@ -52,10 +48,8 @@ namespace Win32GameEngine {
 	class PureBlock : public UV {
 	public:
 		Color color;
-		PureBlock(Entity *parent) : UV(parent) {}
-		PureBlock(Entity *parent, Color color) : UV(parent), color(color) {}
-		inline virtual Color sample(Vec2F uv) const override {
-			return color;
-		}
+		PureBlock(Entity *parent, Vec2F size, Color color) :
+			UV(parent, RectBound({ -size[0] / 2, -size[1] / 2 }, { size[0] / 2, size[1] / 2 })), color(color) {}
+		inline virtual Color sample(Vec2F uv) const override { return color; }
 	};
 }
