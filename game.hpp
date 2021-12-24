@@ -76,7 +76,7 @@ namespace Win32GameEngine {
 				float rot = rotation();
 				Vec3F sca = scale();
 				float c = cos(rot), s = sin(rot);
-				float x = 1 / sca[0], y = 1 / sca[1];
+				float x = sca[0], y = sca[1];
 				row(0) = Vec2F{ x * c, -y * s };
 				row(1) = Vec2F{ x * s, y * c };
 				col(3) = position();
@@ -116,7 +116,6 @@ namespace Win32GameEngine {
 	protected:
 		Scene(Game *game) : game(game) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
-				// Sort entities by Z coordinate
 				for(Entity *entity : entities)
 					entity->operator()({ GameEventType::UPDATE });
 			});

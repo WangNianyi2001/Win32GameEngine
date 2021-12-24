@@ -4,17 +4,15 @@
 #include "buffer.hpp"
 
 namespace Win32GameEngine {
-	template<typename T>
 	struct RectBound {
-		using V = Vector<2, T>;
+		using V = Vec2F;
 		V min, max;
-		RectBound() : min{ 0, 0 }, max{ 0, 0 } {}
-		RectBound(V min, V max) : RectBound() {
+		RectBound() : min{ INFINITY, INFINITY }, max{ -INFINITY, -INFINITY } {}
+		RectBound(V min, V max) : RectBound(){
 			add(min);
 			add(max);
 		}
-		template<derived_from_template<RectBound> R>
-		RectBound(R const &r) : RectBound(V(r.min), V(r.max)) {}
+		RectBound(RectBound const &r) : RectBound(V(r.min), V(r.max)) {}
 		V topleft() const { return min; }
 		V topright() const { return { max[0], min[1] }; }
 		V bottomright() const { return max; }
@@ -25,10 +23,12 @@ namespace Win32GameEngine {
 			max[0] = std::max(point[0], max[0]);
 			max[1] = std::max(point[1], max[1]);
 		}
-		RectBound<T> transform(function<V(V)> f) {
-			RectBound<T> res(f(min), f(max));
+		RectBound transform(function<V(V)> f) {
+			RectBound res;
+			res.add(f(topleft()));
 			res.add(f(topright()));
 			res.add(f(bottomleft()));
+			res.add(f(bottomright()));
 			return res;
 		}
 	};
@@ -36,8 +36,14 @@ namespace Win32GameEngine {
 	class UV : public Component {
 	public:
 		UV(Entity *parent) : Component(parent) {}
-		RectBound<float> getbound() const {
-			return RectBound<float>({ -1.f, -1.f }, { 1.f, 1.f });
+		RectBound getbound() const {
+			auto s = entity->transform.scale.value;
+			return RectBound({ -s[0], -s[1] }, { s[0], s[1] });
+		}
+		virtual bool inbound(Vec2F uv) {
+			RectBound bound = RectBound({ -1, -1 }, { 1, 1 });
+			float x = uv[0], y = uv[1];
+			return x < bound.max[0] && x >= bound.min[0] && y < bound.max[1] && y >= bound.min[1];
 		}
 		virtual Color sample(Vec2F uv) const = 0;
 	};

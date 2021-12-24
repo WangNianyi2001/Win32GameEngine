@@ -12,15 +12,17 @@ namespace Win32GameEngine {
 			Vec4F top = screenp;
 			top[2] = 1;
 			Vec4F bottom{ 0, 0, 0, 1 };
-			float z = camera_entity(top)[2] / camera_entity(bottom)[2];
+			float z = -camera_entity(top)[2] / camera_entity(bottom)[2];
 			top = top * z + bottom;
 			return camera_entity(top);
 		}
 		static Vec2F uv_screen(
 			SquareMatrix<4, float> const &entity_camera, Vec2F uvp
 		) {
-			Vec4F camera = entity_camera(uvp);
-			return camera * (1 / camera[2]);
+			Vec4F augmented = uvp;
+			augmented[3] = 1;
+			Vec4F camerap = entity_camera(augmented);
+			return camerap * (1 / camerap[2]);
 		}
 		Vec2I buffer_shift;
 	public:
@@ -40,32 +42,33 @@ namespace Win32GameEngine {
 		}
 		void sample() {
 			clear();
-			Entity::Transform &self_transformation = entity->transform;
+			Entity::Transform &self_transform = entity->transform;
 			for(Entity *const entity : entity->scene->entities) {
 				UV *const uv = entity->getcomponent<UV>();
 				if(!uv)
 					continue;
+				if(uv->entity->transform.position.value[2] <= 0)
+					continue;
 				SquareMatrix<4, float>
-					camera_entity =
-						entity->transform.inverse.compose(self_transformation),
+					camera_entity = entity->transform.inverse.compose(self_transform),
 					entity_camera = camera_entity.inverse();
-				RectBound<float> screenb(uv->getbound().transform(
-					bind_front(Camera::screen_uv, camera_entity)
-				));
+
+				RectBound uvb = uv->getbound();
+				RectBound screenb = uvb.transform(bind_front(uv_screen, entity_camera));
 				float const
 					ymin = screenb.min[1],
-					xmin = screenb.min[0],
 					ymax = screenb.max[1],
+					xmin = screenb.min[0],
 					xmax = screenb.max[0];
 				for(float y = ymin; y < ymax; ++y) {
 					for(float x = xmin; x < xmax; ++x) {
-						Vec2F screenp{ y, x };
+						Vec2F screenp{ x, y };
 						Color *target = at(screen_buffer(screenp));
 						if(!target)
 							continue;
-						*target = *target + uv->sample(
-							screen_uv(camera_entity, { y, x })
-						);
+						Vec2F uvp = screen_uv(camera_entity, screenp);
+						if(uv->inbound(uvp))
+							*target = *target + uv->sample(uvp);
 					}
 				}
 			}

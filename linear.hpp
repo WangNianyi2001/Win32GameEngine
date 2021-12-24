@@ -177,7 +177,7 @@ namespace Win32GameEngine {
 		Matrix<M::Out::dimension, ID, T> compose(M const &matrix) const {
 			Matrix<M::Out::dimension, ID, T> res;
 			for(unsigned c = 0; c < ID; ++c)
-				res.col(c) = matrix(col(c));
+				res.col(c) = operator()(matrix.col(c));
 			return res;
 		}
 	};
