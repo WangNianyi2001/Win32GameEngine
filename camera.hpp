@@ -35,6 +35,7 @@ namespace Win32GameEngine {
 				HDC com = CreateCompatibleDC(hdc);
 				SelectObject(com, gethandle());
 				BitBlt(hdc, 0, 0, dimension[0], dimension[1], com, 0, 0, SRCCOPY);
+				DeleteObject(com);
 			});
 		}
 		inline Vec2I screen_buffer(Vec2F screenp) const {

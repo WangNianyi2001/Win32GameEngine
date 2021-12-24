@@ -36,10 +36,6 @@ namespace Win32GameEngine {
 				for(Component *component : components)
 					component->operator()({ GameEventType::UPDATE });
 			});
-			add(GameEventType::FIXEDUPDATE, [&](GameEvent) {
-				for(Component *component : components)
-					component->operator()({ GameEventType::FIXEDUPDATE });
-			});
 			add(GameEventType::PAINT, [&](GameEvent) {
 				for(Component *component : components)
 					component->operator()({ GameEventType::PAINT });
@@ -119,10 +115,6 @@ namespace Win32GameEngine {
 				for(Entity *entity : entities)
 					entity->operator()({ GameEventType::UPDATE });
 			});
-			add(GameEventType::FIXEDUPDATE, [&](GameEvent) {
-				for(Entity *entity : entities)
-					entity->operator()({ GameEventType::FIXEDUPDATE });
-			});
 			add(GameEventType::PAINT, [&](GameEvent) {
 				sort(entities.begin(), entities.end(), [](Entity *a, Entity *b) { return *a < *b; });
 				for(Entity *entity : entities)
@@ -158,9 +150,11 @@ namespace Win32GameEngine {
 		Window *const window;
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
+		ULONGLONG const start_tick;
+		ULONGLONG last_tick;
 	public:
 		set<Scene *> scenes;
-		Game(Window *const w) : window(w) {
+		Game(Window *const w) : window(w), start_tick(gettick()), last_tick(start_tick) {
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
@@ -184,10 +178,7 @@ namespace Win32GameEngine {
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				for(Scene *scene : scenes)
 					scene->operator()({ GameEventType::UPDATE });
-			});
-			add(GameEventType::FIXEDUPDATE, [&](GameEvent) {
-				for(Scene *scene : scenes)
-					scene->operator()({ GameEventType::FIXEDUPDATE });
+				last_tick = gettick();
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
 				for(Scene *scene : scenes)
@@ -201,5 +192,8 @@ namespace Win32GameEngine {
 			return scene;
 		}
 		inline HDC gethdc() const { return hdc; }
+		static inline ULONGLONG gettick() { return GetTickCount64(); }
+		inline ULONGLONG elapsedtick() { return gettick() - start_tick; }
+		inline ULONGLONG frametick() { return gettick() - last_tick; }
 	};
 }
