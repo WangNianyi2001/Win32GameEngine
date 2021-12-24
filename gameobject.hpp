@@ -13,6 +13,7 @@ namespace Win32GameEngine {
 	// they can be achieved equivalently by constructors & destructors.
 	enum class GameEventType {
 		UPDATE, FIXEDUPDATE,
+		PAINT,
 		ACTIVATE, INACTIVATE,
 	};
 	struct GameEvent : Event<GameEventType> {};

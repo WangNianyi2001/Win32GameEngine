@@ -18,20 +18,35 @@ namespace Win32GameEngine {
 	class Component : public GameObject {
 		friend Entity;
 	protected:
-		Entity const *entity;
 		Component(Entity *entity) : entity(entity) {}
 	public:
+		Entity *const entity;
 		template<derived_from<Component> T>
-		inline T *be() const { return dynamic_cast<T *>(this); }
+		inline T *be() const {
+			return dynamic_cast<T *>(const_cast<Component *>(this));
+		}
 	};
 
 	// Game objects that can exist in a scene.
 	class Entity : public GameObject {
 		friend Scene;
 	protected:
-		Scene const *scene;
-		Entity(Scene *scene) : scene(scene) {}
+		Entity(Scene *scene) : scene(scene) {
+			add(GameEventType::UPDATE, [&](GameEvent) {
+				for(Component *component : components)
+					component->operator()({ GameEventType::UPDATE });
+			});
+			add(GameEventType::FIXEDUPDATE, [&](GameEvent) {
+				for(Component *component : components)
+					component->operator()({ GameEventType::FIXEDUPDATE });
+			});
+			add(GameEventType::PAINT, [&](GameEvent) {
+				for(Component *component : components)
+					component->operator()({ GameEventType::PAINT });
+			});
+		}
 	public:
+		Scene *const scene;
 		struct Transform : AffineMatrix<3, float> {
 			template<typename T>
 			struct Attribute {
@@ -63,7 +78,7 @@ namespace Win32GameEngine {
 				float rot = rotation();
 				Vec3F sca = scale();
 				float c = cos(rot), s = sin(rot);
-				float x = sca[0], y = sca[1];
+				float x = 1 / sca[0], y = 1 / sca[1];
 				row(0) = Vec2F{ x * c, -y * s };
 				row(1) = Vec2F{ x * s, y * c };
 				col(3) = position();
@@ -84,9 +99,9 @@ namespace Win32GameEngine {
 			return component;
 		}
 		template<derived_from<Component> T>
-		T *getcomponent() {
+		T *getcomponent() const {
 			for(Component *component : components) {
-				T *t = component->be();
+				T *t = component->be<T>();
 				if(t)
 					return t;
 			}
@@ -98,14 +113,24 @@ namespace Win32GameEngine {
 	class Scene : public GameObject {
 		friend Game;
 	protected:
-		Game const *game;
 		Scene(Game *game) : game(game) {
-			// Sort by Z coordinate when update
 			add(GameEventType::UPDATE, [&](GameEvent) {
+				// Sort entities by Z coordinate
 				sort(entities.begin(), entities.end());
+				for(Entity *entity : entities)
+					entity->operator()({ GameEventType::UPDATE });
+			});
+			add(GameEventType::FIXEDUPDATE, [&](GameEvent) {
+				for(Entity *entity : entities)
+					entity->operator()({ GameEventType::FIXEDUPDATE });
+			});
+			add(GameEventType::PAINT, [&](GameEvent) {
+				for(Entity *entity : entities)
+					entity->operator()({ GameEventType::PAINT });
 			});
 		}
 	public:
+		Game *const game;
 		vector<Entity *> entities;
 		virtual ~Scene() {
 			for(Entity *entity : entities)
@@ -125,6 +150,12 @@ namespace Win32GameEngine {
 			addentity(entity);
 			return entity;
 		}
+		template<derived_from<Component> Component, typename ...Args>
+		Entity *makeentity(Args ...args) {
+			Entity *entity = makeentity();
+			entity->makecomponent<Component>(args...);
+			return entity;
+		}
 	};
 
 	// The instance of the entire game, communicates with the Win32 API,
@@ -141,6 +172,7 @@ namespace Win32GameEngine {
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
+				postpone([&]() { operator()({ GameEventType::PAINT }); });
 				postpone([&]() { EndPaint(window->handle, ps); });
 			});
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
@@ -157,6 +189,18 @@ namespace Win32GameEngine {
 			});
 			window->events.add(WM_DESTROY, [&](SystemEvent) { inactivate(); });
 			window->events.add(WM_QUIT, [&](SystemEvent) { PostQuitMessage(0); });
+			add(GameEventType::UPDATE, [&](GameEvent) {
+				for(Scene *scene : scenes)
+					scene->operator()({ GameEventType::UPDATE });
+			});
+			add(GameEventType::FIXEDUPDATE, [&](GameEvent) {
+				for(Scene *scene : scenes)
+					scene->operator()({ GameEventType::FIXEDUPDATE });
+			});
+			add(GameEventType::PAINT, [&](GameEvent) {
+				for(Scene *scene : scenes)
+					scene->operator()({ GameEventType::PAINT });
+			});
 		}
 		void addscene(Scene *scene) { scenes.insert(scene); }
 		inline Scene *makescene() {
@@ -164,5 +208,6 @@ namespace Win32GameEngine {
 			addscene(scene);
 			return scene;
 		}
+		inline HDC gethdc() const { return hdc; }
 	};
 }

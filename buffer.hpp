@@ -21,29 +21,27 @@ namespace Win32GameEngine {
 			delete[] data;
 		}
 		virtual unsigned locate(Index index) const = 0;
-		virtual bool valid(Index const index) = 0;
+		virtual bool valid(Index const index) const = 0;
 		template<typename Index>
-		inline Data *at(Index index) {
+		inline Data *at(Index index) const {
 			return valid(index) ? data + locate(index) : nullptr;
 		}
-		virtual inline Data &operator[](Index index) {
+		virtual inline Data &operator[](Index index) const {
 			return *at(index);
+		}
+		void clear() const {
+			memset(data, 0, sizeof(Data) * size);
 		}
 	};
 
 	struct Color {
 		using Channel = unsigned __int8;
-		Channel r, g, b, Vector;
+		Channel b, g, r, a;
 		Color() = default;
 		template<typename T>
-		Color(T r, T g, T b, T Vector) : r(r), g(g), b(b), Vector(Vector) {}
-		Color premul() {
-			return Color{
-				(Channel)(r * Vector / 0xff),
-				(Channel)(g * Vector / 0xff),
-				(Channel)(b * Vector / 0xff),
-				Vector
-			};
+		Color(T r, T g, T b, T Vector) : r(r), g(g), b(b), a(a) {}
+		Color operator+(Color const &c) {
+			return c;	// TODO
 		}
 	};
 
@@ -51,6 +49,9 @@ namespace Win32GameEngine {
 		Vec2U const dimension;
 		HBITMAP handle = nullptr;
 		Bitmap(Vec2U dimension) : dimension(dimension), Buffer<Color, Vec2I>(dimension[0] * dimension[1]) {}
+		~Bitmap() {
+			handle && DeleteObject(handle);
+		}
 		HBITMAP gethandle() {
 			handle && DeleteObject(handle);
 			return handle = CreateBitmap(dimension[0], dimension[1], 1U, 32U, data);
@@ -58,12 +59,9 @@ namespace Win32GameEngine {
 		virtual unsigned locate(Vec2I index) const override {
 			return index.at(1) * dimension.at(0) + index.at(0);
 		}
-		virtual bool valid(Vec2I const index) override {
+		virtual bool valid(Vec2I const index) const override {
 			int x = index.at(0), y = index.at(1);
 			return x >= 0 && y >= 0 && (unsigned)x < dimension.at(0) && (unsigned)y < dimension.at(1);
-		}
-		~Bitmap() {
-			handle && DeleteObject(handle);
 		}
 	};
 }

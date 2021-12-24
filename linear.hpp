@@ -129,7 +129,7 @@ namespace Win32GameEngine {
 
 	template<typename Out, typename ...In>
 	struct Map {
-		virtual Out operator()(In ...) = 0;
+		virtual Out operator()(In ...) const = 0;
 	};
 
 	template<typename T>
@@ -167,10 +167,17 @@ namespace Win32GameEngine {
 		}
 		inline Row row(unsigned i) const { return Row((T *)data + i * ID); }
 		inline Col col(unsigned i) const { return Col((T *)data + i); }
-		Out operator()(In vector) override {
+		virtual Out operator()(In vector) const override {
 			Out res;
 			for(unsigned i = 0; i < OD; ++i)
 				res[i] = row(i).dot(vector);
+			return res;
+		}
+		template<typename M>
+		Matrix<M::Out::dimension, ID, T> compose(M const &matrix) const {
+			Matrix<M::Out::dimension, ID, T> res;
+			for(unsigned c = 0; c < ID; ++c)
+				res.col(c) = matrix(col(c));
 			return res;
 		}
 	};
@@ -182,7 +189,7 @@ namespace Win32GameEngine {
 		SquareMatrix(Matrix<D, D, T> const &matrix) : Base(matrix) {}
 		SquareMatrix(initializer_list<T> list) : Base(list) {}
 		SquareMatrix(initializer_list<initializer_list<T>> list) : Base(list) {}
-		SquareMatrix<D, T> inverse() {
+		SquareMatrix<D, T> inverse() const {
 			using Augmented = Matrix<D, 2U * D, T>;
 			// Invert a square matrix by Gaussian elimination.
 			// Create the augmented matrix.
@@ -252,11 +259,11 @@ namespace Win32GameEngine {
 				this->row(r) = linear.row(r);
 			this->col(D) = bias;
 		}
-		Param operator()(Param param) {
+		Param operator()(Param param) const {
 			Affined affined = param;
 			affined[D] = 1;
 			return Param(Base::operator()(affined));
 		}
-		inline AffineMatrix<D, T> inverse() { return Base::inverse(); }
+		inline AffineMatrix<D, T> inverse() const { return Base::inverse(); }
 	};
 }
