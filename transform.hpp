@@ -3,7 +3,14 @@
 #include "game.hpp"
 
 namespace Win32GameEngine {
-	struct Transform : Component, AffineMatrix<3, float> {
+	struct Transform : Component {
+	protected:
+		Transform *parent;
+		set<Transform *> children;
+		inline void updateworld() {
+			world = parent ? parent->world.compose(local) : local;
+		}
+	public:
 		template<typename T>
 		struct Attribute {
 			Transform *const transform;
@@ -21,29 +28,48 @@ namespace Win32GameEngine {
 		Attribute<Vec3F> position;
 		Attribute<float> rotation;
 		Attribute<Vec3F> scale;
-		Transform(Entity *entity) : Component(entity), position(this, { 0, 0, 0 }), rotation(this, .0f), scale(this, { 1, 1, 1 }) {
-			row(2)[2] = 1;
-			entity->scene->solid_entities.push_back(entity);
+		SquareMatrix<4, float> local, world;
+		Transform(Entity *entity) : Component(entity),
+			position(this, { 0, 0, 0 }), rotation(this, .0f), scale(this, { 1, 1, 1 }),
+			parent(nullptr), children()
+		{
+			update();
 		}
-		~Transform() {
-			auto &s = entity->scene->solid_entities;
-			auto it = find(s.begin(), s.end(), entity);
-			if(it != s.end())
-				s.erase(it);
+		void setparent(Transform *t) {
+			if(parent)
+				parent->children.erase(this);
+			if(parent = t)
+				parent->children.insert(this);
+			updateworld();
 		}
-		AffineMatrix<3, float> inverse;
-	protected:
-		friend Attribute<Vec3F>;
-		friend Attribute<float>;
 		void update() {
+			local.diag() = Vec4F{ 1, 1, 1, 1 };
 			float rot = rotation();
 			Vec3F sca = scale();
 			float c = cos(rot), s = sin(rot);
 			float x = sca[0], y = sca[1];
-			row(0) = Vec2F{ x * c, -y * s };
-			row(1) = Vec2F{ x * s, y * c };
-			col(3) = position();
-			inverse = AffineMatrix<3, float>::inverse();
+			local.row(0) = Vec2F{ x * c, -y * s };
+			local.row(1) = Vec2F{ x * s, y * c };
+			local.col(3) = position();
+			updateworld();
+			for(Transform *child : children)
+				child->updateworld();
+		}
+	};
+
+	class SolidEntity : public Entity {
+	public:
+		Transform &transform;
+		SolidEntity(Scene *scene) : Entity(scene),
+			transform(*(Transform *)makecomponent<Transform>()) {
+			scene->addentity(this);
+			scene->solid_entities.push_back(this);
+		}
+		virtual ~SolidEntity() {
+			auto &s = scene->solid_entities;
+			auto it = find(s.begin(), s.end(), this);
+			if(it != s.end())
+				s.erase(it);
 		}
 	};
 }

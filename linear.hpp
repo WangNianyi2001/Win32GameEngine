@@ -141,6 +141,8 @@ namespace Win32GameEngine {
 		using Out = Vector<OD, T>;
 		using Row = VectorAccessor<ID, T, 1, In>;
 		using Col = VectorAccessor<OD, T, ID, Out>;
+		static constexpr unsigned diagonal_size = OD < ID ? OD : ID;
+		using Diag = VectorAccessor<diagonal_size, T, ID + 1, Vector<diagonal_size, T>>;
 		static constexpr unsigned size = ID * OD;
 		T data[size];
 		Matrix() {
@@ -167,6 +169,7 @@ namespace Win32GameEngine {
 		}
 		inline Row row(unsigned i) const { return Row((T *)data + i * ID); }
 		inline Col col(unsigned i) const { return Col((T *)data + i); }
+		inline Diag diag() const { return Diag((T *)data); }
 		virtual Out operator()(In vector) const override {
 			Out res;
 			for(unsigned i = 0; i < OD; ++i)
@@ -238,32 +241,5 @@ namespace Win32GameEngine {
 				res.col(i) = augmented.col(i + D);
 			return res;
 		}
-	};
-
-	template<unsigned D, typename T>
-	struct AffineMatrix : SquareMatrix<D + 1, T> {
-		using Base = SquareMatrix<D + 1, T>;
-		using Param = Vector<D, T>;
-		using Affined = Vector<D + 1, T>;
-		AffineMatrix() : Base() {
-			this->data[D * (D + 2)] = 1;
-		}
-		AffineMatrix(SquareMatrix<D + 1, T> const &matrix) : Base(matrix) {
-			typename Base::Row row = this->row(D);
-			for(unsigned c = 0; c < D; ++c)
-				row[c] = 0;
-			row[D] = 1;
-		}
-		AffineMatrix(SquareMatrix<D, T> const &linear, Vector<D, T> const &bias) : AffineMatrix() {
-			for(unsigned r = 0; r < D; ++r)
-				this->row(r) = linear.row(r);
-			this->col(D) = bias;
-		}
-		Param operator()(Param param) const {
-			Affined affined = param;
-			affined[D] = 1;
-			return Param(Base::operator()(affined));
-		}
-		inline AffineMatrix<D, T> inverse() const { return Base::inverse(); }
 	};
 }

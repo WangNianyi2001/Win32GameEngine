@@ -43,7 +43,7 @@ namespace Win32GameEngine {
 						bz = b->getcomponent<Transform>()->position.value[2];
 					return az > bz;
 				});
-				// clear();
+				clear();
 				sample();
 				HDC hdc = scene->game->gethdc();
 				HDC com = CreateCompatibleDC(hdc);
@@ -67,11 +67,13 @@ namespace Win32GameEngine {
 			Transform &self_transform = *entity->getcomponent<Transform>();
 			RectBound screen_clip{ buffer_screen({ 0, 0 }), buffer_screen(target.dimension) };
 			for(Entity *const entity : entity->scene->solid_entities) {
+				if(!entity->isactive())
+					continue;
 				UV *const uv = entity->getcomponent<UV>();
-				if(!uv)
+				if(!uv || !uv->isactive())
 					continue;
 				SquareMatrix<4, float>
-					camera_entity = entity->getcomponent<Transform>()->inverse.compose(self_transform),
+					camera_entity = entity->getcomponent<Transform>()->world.inverse().compose(self_transform.world),
 					entity_camera = camera_entity.inverse();
 				RectBound screenb = uv->bound
 					.transform(bind_front(uv_screen, entity_camera))
@@ -93,6 +95,9 @@ namespace Win32GameEngine {
 					}
 				}
 			}
+		}
+		inline void clear() {
+			memset(target.data.get(), 0, target.size * sizeof(Color));
 		}
 	};
 }

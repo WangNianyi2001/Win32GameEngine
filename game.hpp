@@ -54,12 +54,13 @@ namespace Win32GameEngine {
 			for(Component *component : components)
 				delete component;
 		}
-		void addcomponent(Component *component) { components.insert(component); }
-		template<derived_from<Component> Component, typename ...Args>
-		Component *makecomponent(Args ...args) {
-			Component *component = new Component(this, args...);
-			addcomponent(component);
+		Component *addcomponent(Component *component) {
+			components.insert(component);
 			return component;
+		}
+		template<derived_from<Component> Component, typename ...Args>
+		inline Component *makecomponent(Args ...args) {
+			return (Component *)addcomponent(new Component(this, args...));
 		}
 		template<derived_from<Component> T>
 		T *getcomponent() const {
@@ -98,17 +99,16 @@ namespace Win32GameEngine {
 			for(Entity *entity : entities)
 				delete entity;
 		}
-		inline void addentity(Entity *entity) { entities.insert(entity); }
-		Entity *makeentity() {
-			Entity *entity = new Entity(this);
-			addentity(entity);
+		Entity *addentity(Entity *entity) {
+			entities.insert(entity);
 			return entity;
 		}
+		inline Entity *makeentity() {
+			return addentity(new Entity(this));
+		}
 		template<derived_from<Component> Component, typename ...Args>
-		Entity *makeentity(Args ...args) {
-			Entity *entity = makeentity();
-			entity->makecomponent<Component>(args...);
-			return entity;
+		inline Entity *makeentity(Args ...args) {
+			return makeentity()->makecomponent<Component>(args...)->entity;
 		}
 	};
 
@@ -171,11 +171,12 @@ namespace Win32GameEngine {
 				}
 			});
 		}
-		void addscene(Scene *scene) { scenes.insert(scene); }
-		Scene *makescene() {
-			Scene *scene = new Scene(this);
-			addscene(scene);
+		Scene *addscene(Scene *scene) {
+			scenes.insert(scene);
 			return scene;
+		}
+		inline Scene *makescene() {
+			return addscene(new Scene(this));
 		}
 		inline HDC gethdc() const { return hdc; }
 		void repaint() {

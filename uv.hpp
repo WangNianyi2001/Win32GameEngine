@@ -81,13 +81,4 @@ namespace Win32GameEngine {
 			return *color;
 		}
 	};
-
-	class SolidEntity : public Entity {
-	public:
-		Transform &transform;
-		SolidEntity(Scene *scene) : Entity(scene),
-			transform(*(Transform *)makecomponent<Transform>()) {
-			scene->addentity(this);
-		}
-	};
 }
