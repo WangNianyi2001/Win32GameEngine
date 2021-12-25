@@ -115,15 +115,18 @@ namespace Win32GameEngine {
 	// handles scene management, provides a runtime-long environment for
 	// game objects to interact internally with.
 	class Game : public GameObject {
-	protected:
+	private:
+		Ticker frame;
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
-		ULONGLONG const start_tick;
-		ULONGLONG last_tick;
+	protected:
+		Ticker time;
 	public:
 		Window *const window;
 		set<Scene *> scenes;
-		Game(Window *const w) : GameObject(false), window(w), start_tick(gettick()), last_tick(start_tick) {
+		Game(Window *const w) : GameObject(false), window(w),
+			time(), frame(0)
+		{
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
@@ -147,11 +150,17 @@ namespace Win32GameEngine {
 			window->events.add(WM_DESTROY, [&](SystemEvent) { inactivate(); });
 			window->events.add(WM_QUIT, [&](SystemEvent) { PostQuitMessage(0); });
 			add(GameEventType::UPDATE, [&](GameEvent) {
+				if(!time.isup())
+					return;
+				time.tick();
 				for(Scene *scene : scenes) {
 					if(scene->isactive())
 						scene->operator()({ GameEventType::UPDATE });
 				}
-				last_tick = gettick();
+				if(frame.isup()) {
+					repaint();
+					frame.tick();
+				}
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
 				for(Scene *scene : scenes) {
@@ -167,8 +176,10 @@ namespace Win32GameEngine {
 			return scene;
 		}
 		inline HDC gethdc() const { return hdc; }
-		static inline ULONGLONG gettick() { return GetTickCount64(); }
-		inline ULONGLONG elapsedtick() { return gettick() - start_tick; }
-		inline ULONGLONG frametick() { return gettick() - last_tick; }
+		void repaint() {
+			InvalidateRect(window->handle, nullptr, false);
+		}
+		void setupdaterate(ULONGLONG rate) { time.setrate(rate); }
+		void setfps(ULONGLONG fps) { this->frame.setrate(fps ? 1000 / fps : 0); }
 	};
 }
