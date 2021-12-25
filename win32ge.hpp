@@ -20,7 +20,6 @@ int WINAPI WIN32ENTRY(
 	_In_ PWSTR pCmdLine,
 	_In_ int nCmdShow
 ) {
-	SetProcessDPIAware();
 	using namespace Win32GameEngine;
 	if(!game)
 		return 0;

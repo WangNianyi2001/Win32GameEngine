@@ -51,6 +51,7 @@ namespace Win32GameEngine {
 			Vec2I position{ CW_USEDEFAULT, CW_USEDEFAULT };
 			Vec2U size{ 640, 480 };
 			Style style = Style::ASIS;
+			bool dpi_aware = true;
 		};
 		InitArg args;	// Stores a copy of the initializing arguments for later reference
 		static inline Vec2I screen{	// Screen size.
@@ -72,6 +73,8 @@ namespace Win32GameEngine {
 	public:
 		HWND handle;
 		Window(InitArg const args) : args(args) {
+			if(!args.dpi_aware)
+				SetProcessDPIAware();
 			WNDCLASS window_class = {
 				.style = args.class_style,
 				.lpfnWndProc = &Window::event_processor,
