@@ -55,7 +55,7 @@ namespace Win32GameEngine {
 		}
 		void addcomponent(Component *component) { components.insert(component); }
 		template<derived_from<Component> Component, typename ...Args>
-		inline Component *makecomponent(Args ...args) {
+		Component *makecomponent(Args ...args) {
 			Component *component = new Component(this, args...);
 			addcomponent(component);
 			return component;
@@ -98,7 +98,7 @@ namespace Win32GameEngine {
 				delete entity;
 		}
 		inline void addentity(Entity *entity) { entities.insert(entity); }
-		inline Entity *makeentity() {
+		Entity *makeentity() {
 			Entity *entity = new Entity(this);
 			addentity(entity);
 			return entity;
@@ -170,7 +170,7 @@ namespace Win32GameEngine {
 			});
 		}
 		void addscene(Scene *scene) { scenes.insert(scene); }
-		inline Scene *makescene() {
+		Scene *makescene() {
 			Scene *scene = new Scene(this);
 			addscene(scene);
 			return scene;
