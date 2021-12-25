@@ -5,6 +5,7 @@
 
 #include "window.hpp"
 #include "gameobject.hpp"
+#include "buffer.hpp"
 #include <algorithm>
 
 namespace Win32GameEngine {
@@ -123,9 +124,10 @@ namespace Win32GameEngine {
 		Ticker time;
 	public:
 		Window *const window;
+		Bitmap buffer;
 		set<Scene *> scenes;
 		Game(Window *const w) : GameObject(false), window(w),
-			time(), frame(0)
+			buffer(window->args.size), time(), frame(0)
 		{
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {

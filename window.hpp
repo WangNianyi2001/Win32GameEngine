@@ -52,6 +52,7 @@ namespace Win32GameEngine {
 			Vec2U size{ 640, 480 };
 			Style style = Style::ASIS;
 		};
+		InitArg args;	// Stores a copy of the initializing arguments for later reference
 		static inline Vec2I screen{	// Screen size.
 			GetSystemMetrics(SM_CXSCREEN),
 			GetSystemMetrics(SM_CYSCREEN)
@@ -59,7 +60,6 @@ namespace Win32GameEngine {
 	private:
 		using HWndMap = map<HWND, Window *>;
 		inline static HWndMap handles = HWndMap();	// Reference for callback routing.
-		InitArg args;	// Stores a copy of the initializing arguments for later reference
 		static LRESULT CALLBACK event_processor(HWND handle, UINT type, WPARAM w, LPARAM l) {
 			// Look up for corresponding window by handle.
 			// Had to implement this way due to the early age C-style API design.
