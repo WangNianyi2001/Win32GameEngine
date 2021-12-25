@@ -28,7 +28,7 @@
     <ClInclude Include="buffer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="uv.hpp">
+    <ClInclude Include="texture.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="transform.hpp">
@@ -45,8 +45,5 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{58f9535b-570c-483e-b3e5-64f91c92cbe4}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

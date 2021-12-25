@@ -42,11 +42,11 @@ namespace Win32GameEngine {
 		}
 	};
 	
-	class UV : public Component {
+	class Texture : public Component {
 	public:
 		RectBound bound;
 		Vec2F size, anchor;
-		UV(Entity *entity, Vec2F size, Vec2F anchor) :
+		Texture(Entity *entity, Vec2F size, Vec2F anchor) :
 			Component(entity), size(size), anchor(anchor),
 			bound(RectBound(anchor * -1, size - anchor)) {
 		}
@@ -57,21 +57,21 @@ namespace Win32GameEngine {
 		virtual Color sample(Vec2F uv) const = 0;
 	};
 
-	class SolidBlock : public UV {
+	class ColorBox : public Texture {
 	public:
 		Color color;
-		SolidBlock(Entity *entity, Color color, Vec2F size, Vec2F anchor) :
-			UV(entity, size, anchor), color(color) {
+		ColorBox(Entity *entity, Color color, Vec2F size, Vec2F anchor) :
+			Texture(entity, size, anchor), color(color) {
 		}
-		SolidBlock(Entity *entity, Color color, Vec2F size) : SolidBlock(entity, color, size, size * .5f) {}
+		ColorBox(Entity *entity, Color color, Vec2F size) : ColorBox(entity, color, size, size * .5f) {}
 		inline virtual Color sample(Vec2F uv) const override { return color; }
 	};
 
-	class Sprite : public UV {
+	class Sprite : public Texture {
 	public:
 		Bitmap bitmap;
 		Sprite(Entity *entity, Bitmap const &bitmap, Vec2F anchor) :
-			UV(entity, bitmap.dimension, anchor), bitmap(bitmap) {
+			Texture(entity, bitmap.dimension, anchor), bitmap(bitmap) {
 		}
 		Sprite(Entity *entity, Bitmap const &bitmap) : Sprite(entity, bitmap, bitmap.dimension * .5f) {}
 		inline virtual Color sample(Vec2F uv) const override {

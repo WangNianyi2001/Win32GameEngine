@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include "game.hpp"
+#include "camera.hpp"
 
 namespace Win32GameEngine {
 	extern Game *game;

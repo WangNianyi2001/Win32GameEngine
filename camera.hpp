@@ -2,7 +2,7 @@
 
 #include "game.hpp"
 #include "transform.hpp"
-#include "uv.hpp"
+#include "texture.hpp"
 
 namespace Win32GameEngine {
 	class Camera : public Renderer {
@@ -38,7 +38,7 @@ namespace Win32GameEngine {
 		static bool validate(Entity const *entity) {
 			if(!entity->isactive())
 				return false;
-			UV *const uv = entity->getcomponent<UV>();
+			Texture *const uv = entity->getcomponent<Texture>();
 			if(!uv || !uv->isactive())
 				return false;
 			Transform *const entity_transform = entity->getcomponent<Transform>();
@@ -95,7 +95,7 @@ namespace Win32GameEngine {
 				buffer_screen(target.dimension)
 			};
 			for(Entity *const entity : queue) {
-				UV *const uv = entity->getcomponent<UV>();
+				Texture *const uv = entity->getcomponent<Texture>();
 				SquareMatrix<4, float>camera_entity = entity
 					->getcomponent<Transform>()
 					->world.inverse()
