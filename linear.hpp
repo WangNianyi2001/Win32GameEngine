@@ -130,13 +130,8 @@ namespace Win32GameEngine {
 	using Vec3F = Vector<3U, float>;
 	using Vec4F = Vector<4U, float>;
 
-	template<typename Out, typename ...In>
-	struct Map {
-		virtual Out operator()(In ...) const = 0;
-	};
-
 	template<unsigned OD, unsigned ID, typename T>
-	struct Matrix : Map<Vector<OD, T>, Vector<ID, T>> {
+	struct Matrix {
 		using In = Vector<ID, T>;
 		using Out = Vector<OD, T>;
 		using Row = VectorAccessor<ID, T, 1, In>;
@@ -170,7 +165,7 @@ namespace Win32GameEngine {
 		inline Row row(unsigned i) const { return Row((T *)data + i * ID); }
 		inline Col col(unsigned i) const { return Col((T *)data + i); }
 		inline Diag diag() const { return Diag((T *)data); }
-		virtual Out operator()(In vector) const override {
+		virtual Out operator()(In vector) const {
 			Out res;
 			for(unsigned i = 0; i < OD; ++i)
 				res[i] = row(i).dot(vector);
