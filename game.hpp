@@ -75,7 +75,7 @@ namespace Win32GameEngine {
 	class Scene : public GameObject {
 		friend Game;
 	protected:
-		Scene(Game *game) : game(game) {
+		Scene(Game *game) : GameObject(false), game(game) {
 			add(GameEventType::UPDATE, [&](GameEvent) {
 				for(Entity *entity : entities) {
 					if(entity->isactive())

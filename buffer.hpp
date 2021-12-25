@@ -1,6 +1,7 @@
 #pragma once
 
 #include "basics.hpp"
+#include "file.hpp"
 
 namespace Win32GameEngine {
 	template<typename Index>
@@ -38,15 +39,15 @@ namespace Win32GameEngine {
 		Color() : Color(0, 0, 0, 0) {}
 		Color(Channel r, Channel g, Channel b) : Color(r, g, b, 255U) {}
 		inline Vec4F unify() const {
-			return Vec4F(Vector<4, Channel>{r, g, b, a}) * (1.f /256);
+			return Vec4F(Vector<4, Channel>{r, g, b, a}) * (1.f / 256);
 		}
 		Color operator+(Color const &c) {
-			if(!~c.a)
+			if(c.a == 255)
 				return c;
 			Vec4F sf = unify(), cf = c.unify();
 			float _a = 1 - (1 - cf[3]) * (1 - sf[3]);
-			Vec3F rgb = sf * (1 - cf[3]) * sf[3] + cf * cf[3];
-			rgb = rgb * _a;
+			Vec3F rgb = sf * ((1 - cf[3]) * sf[3]) + cf * cf[3];
+			rgb = rgb * (1 / _a);
 			Vector<3, Channel> res = rgb * 256;
 			return Color(res[0], res[1], res[2], Channel(_a * 256));
 		}
@@ -63,23 +64,31 @@ namespace Win32GameEngine {
 			handle && DeleteObject(handle);
 		}
 		static Bitmap fromfile(ConstString url) {
-			HBITMAP handle = (HBITMAP)LoadImage(NULL, url, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-			if(!handle) {
-				if(!GetLastError())
-					throw L"Invalid BMP bit format.";
-				throw L"Failed to load bitmap file.";
-			}
-			BITMAP bm;
-			GetObject(handle, sizeof(BITMAP), &bm);
-			Bitmap bitmap({ (unsigned)bm.bmWidth, (unsigned)bm.bmHeight });
-			GetBitmapBits(handle, bitmap.size * sizeof(Color), bitmap.data.get());
-			DeleteObject(handle);
-			for(unsigned i = 0; i < bitmap.size; ++i) {
-				Color *color = bitmap.data.get() + i;
-				if(!color->a)	// Flip alpha channel if not zero
-					color->a = ~color->a;
-				// This is not working due to the fact that GetBitmapBits()
-				// completely ignores the alpha channel of BMP files.
+			File file(url);
+			tagBITMAPFILEHEADER *header = (tagBITMAPFILEHEADER *)file.data;
+			tagBITMAPINFO *info = (tagBITMAPINFO *)(file.data + sizeof(tagBITMAPFILEHEADER));
+			Vec2U dimension{ (unsigned)info->bmiHeader.biWidth, (unsigned)info->bmiHeader.biHeight };
+			Bitmap bitmap(dimension);
+			Color *data = bitmap.data.get();
+			typename Color::Channel *start = file.data + header->bfOffBits;
+			switch(info->bmiHeader.biBitCount) {
+			case 32:
+				for(int i = 0, o = 0; i < bitmap.size; ++i) {
+					o = i * 4;
+					data[i] = Color(start[o], start[o + 1], start[o + 2], start[o + 3]);
+					if(start[o + 3] != 255) {
+						int a = 1;
+					}
+				}
+				break;
+			case 24:
+				for(int i = 0, o = 0; i < bitmap.size; ++i) {
+					o = i * 3;
+					data[i] = Color(start[o], start[o + 1], start[o + 2]);
+				}
+				break;
+			default:
+				throw L"Unrecognized BMP data layout.";
 			}
 			return bitmap;
 		}
