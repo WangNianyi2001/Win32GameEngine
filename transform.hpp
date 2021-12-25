@@ -63,13 +63,6 @@ namespace Win32GameEngine {
 		SolidEntity(Scene *scene) : Entity(scene),
 			transform(*(Transform *)makecomponent<Transform>()) {
 			scene->addentity(this);
-			scene->solid_entities.push_back(this);
-		}
-		virtual ~SolidEntity() {
-			auto &s = scene->solid_entities;
-			auto it = find(s.begin(), s.end(), this);
-			if(it != s.end())
-				s.erase(it);
 		}
 	};
 }

@@ -153,6 +153,7 @@
     <ClInclude Include="gameobject.hpp" />
     <ClInclude Include="linear.hpp" />
     <ClInclude Include="transform.hpp" />
+    <ClInclude Include="ui.hpp" />
     <ClInclude Include="uv.hpp" />
     <ClInclude Include="win32ge.hpp" />
     <ClInclude Include="window.hpp" />

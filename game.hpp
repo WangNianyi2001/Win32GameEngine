@@ -94,7 +94,6 @@ namespace Win32GameEngine {
 	public:
 		Game *const game;
 		set<Entity *> entities;
-		vector<Entity *> solid_entities;
 		virtual ~Scene() {
 			for(Entity *entity : entities)
 				delete entity;
@@ -184,5 +183,16 @@ namespace Win32GameEngine {
 		}
 		void setupdaterate(ULONGLONG rate) { time.setrate(rate); }
 		void setfps(ULONGLONG fps) { this->frame.setrate(fps ? 1000 / fps : 0); }
+	};
+
+	class Renderer : public Component {
+	protected:
+		Bitmap &target;
+		Renderer(Entity *entity) : Component(entity),
+			target(entity->scene->game->buffer) {}
+		virtual void sample() = 0;
+		inline void clear() {
+			memset(target.data.get(), 0, target.size * sizeof(Color));
+		}
 	};
 }

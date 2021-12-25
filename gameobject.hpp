@@ -26,7 +26,7 @@ namespace Win32GameEngine {
 			if(active)
 				activate();
 		}
-		inline bool isactive() { return active; }
+		inline bool isactive() const { return active; }
 		inline void activate() {
 			if(active)
 				return;

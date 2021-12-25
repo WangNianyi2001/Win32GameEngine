@@ -5,7 +5,7 @@
 #include "uv.hpp"
 
 namespace Win32GameEngine {
-	class Camera : public Component {
+	class Camera : public Renderer {
 	protected:
 		static Vec2F screen_uv(
 			SquareMatrix<4, float> const &camera_entity, Vec2F screenp
@@ -27,24 +27,49 @@ namespace Win32GameEngine {
 			Vec4F camerap = entity_camera(augmented);
 			return camerap * (1 / camerap[2]);
 		}
-		Bitmap &target;
 		Vec2I buffer_shift;
 		float pixel_scale;
+		bool compare(Entity const *a, Entity const *b) {
+			float
+				az = a->getcomponent<Transform>()->position.value[2],
+				bz = b->getcomponent<Transform>()->position.value[2];
+			return az > bz;
+		}
+		static bool validate(Entity const *entity) {
+			if(!entity->isactive())
+				return false;
+			UV *const uv = entity->getcomponent<UV>();
+			if(!uv || !uv->isactive())
+				return false;
+			Transform *const entity_transform = entity->getcomponent<Transform>();
+			if(!entity_transform || !entity_transform->isactive())
+				return false;
+			return true;
+		}
+		vector<Entity *> queue;
 	public:
-		Camera(Entity *entity, float view_size) :
-			Component(entity), target(entity->scene->game->buffer) {
+		Camera(Entity *entity, float view_size) : Renderer(entity),
+			queue() {
 			buffer_shift = Vec2F(target.dimension) * .5f;
 			setviewsize(view_size);
 			add(GameEventType::PAINT, [=](GameEvent) {
 				Scene *scene = entity->scene;
-				sort(scene->solid_entities.begin(), scene->solid_entities.end(), [](Entity *a, Entity *b) {
-					float
-						az = a->getcomponent<Transform>()->position.value[2],
-						bz = b->getcomponent<Transform>()->position.value[2];
-					return az > bz;
-				});
+				// Sort solid entities by Z-order.
+				queue.clear();
+				copy_if(
+					scene->entities.begin(),
+					scene->entities.end(),
+					back_inserter(queue),
+					validate
+				);
+				sort(
+					queue.begin(), queue.end(),
+					bind(&Camera::compare, this, placeholders::_1, placeholders::_2)
+				);
+				// Perform rendering action.
 				clear();
 				sample();
+				// Transfer onto device context.
 				HDC hdc = scene->game->gethdc();
 				HDC com = CreateCompatibleDC(hdc);
 				SelectObject(com, target.gethandle());
@@ -63,21 +88,22 @@ namespace Win32GameEngine {
 		inline Vec2F buffer_screen(Vec2I bufferp) const {
 			return (bufferp - buffer_shift) * pixel_scale;
 		}
-		void sample() {
+		virtual void sample() override {
 			Transform &self_transform = *entity->getcomponent<Transform>();
-			RectBound screen_clip{ buffer_screen({ 0, 0 }), buffer_screen(target.dimension) };
-			for(Entity *const entity : entity->scene->solid_entities) {
-				if(!entity->isactive())
-					continue;
+			RectBound screen_clip{
+				buffer_screen({ 0, 0 }),
+				buffer_screen(target.dimension)
+			};
+			for(Entity *const entity : queue) {
 				UV *const uv = entity->getcomponent<UV>();
-				if(!uv || !uv->isactive())
-					continue;
-				SquareMatrix<4, float>
-					camera_entity = entity->getcomponent<Transform>()->world.inverse().compose(self_transform.world),
-					entity_camera = camera_entity.inverse();
+				SquareMatrix<4, float>camera_entity = entity
+					->getcomponent<Transform>()
+					->world.inverse()
+					.compose(self_transform.world);
 				RectBound screenb = uv->bound
-					.transform(bind_front(uv_screen, entity_camera))
-					.clip(screen_clip);
+					.transform(
+						bind_front(uv_screen, camera_entity.inverse())
+					).clip(screen_clip);
 				float const
 					ymin = screenb.min[1],
 					ymax = screenb.max[1],
@@ -86,18 +112,15 @@ namespace Win32GameEngine {
 				for(float y = ymin; y < ymax; y += pixel_scale) {
 					for(float x = xmin; x < xmax; x += pixel_scale) {
 						Vec2F screenp{ x, y };
-						Color *color = target.at(screen_buffer(screenp));
-						if(!color)
+						Color *pixel = target.at(screen_buffer(screenp));
+						if(!pixel)
 							continue;
 						Vec2F uvp = screen_uv(camera_entity, screenp);
 						if(uv->hit(uvp))
-							*color = *color + uv->sample(uvp);
+							*pixel = *pixel + uv->sample(uvp);
 					}
 				}
 			}
-		}
-		inline void clear() {
-			memset(target.data.get(), 0, target.size * sizeof(Color));
 		}
 	};
 }
