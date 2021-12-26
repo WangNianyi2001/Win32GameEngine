@@ -1,7 +1,5 @@
 #pragma once
 
-// Interface for the event systems used across the SDK.
-
 #include "utils.hpp"
 #include <map>
 #include <set>
@@ -10,12 +8,15 @@
 namespace Win32GameEngine {
 	using namespace std;
 
-	// Basic structure for a single event, templated.
-	// Type is to identify the class of the event, e.g. "update" or "click".
+	enum class Propagation {
+		NONE = 0, UP = 1, DOWN = 2
+	};
+
 	template<typename Type>
 	struct Event {
 		using _Type = Type;
 		Type type;
+		Propagation propagation = Propagation::NONE;
 		inline bool operator==(Event<Type> e) {
 			return type == e.type;
 		}
@@ -24,7 +25,7 @@ namespace Win32GameEngine {
 		}
 	};
 
-	template<derived_from_template<Event> Event>
+	template<derived_from_template<Event> Event, typename Ret = void>
 	struct Receiver {
 		struct Postponed {
 			function<void()> action;
@@ -34,7 +35,7 @@ namespace Win32GameEngine {
 		Receiver() {
 			postponeds = vector<Postponed>();
 		}
-		virtual void operator()(Event event) = 0;
+		virtual Ret operator()(Event event) = 0;
 		void postpone(function<void()> action, time_t time = 0) {
 			Postponed postponed{ action, time };
 			postponeds.push_back(postponed);
@@ -52,12 +53,12 @@ namespace Win32GameEngine {
 		}
 	};
 
-	template<derived_from_template<Event> Event>
-	struct Handler : Receiver<Event> {
-		using Function = function<void(Event)>;
+	template<derived_from_template<Event> Event, typename Ret = void>
+	struct Handler : Receiver<Event, Ret> {
+		using Function = function<Ret(Event)>;
 		Function f;
-		virtual inline void operator()(Event event) override {
-			f(event);
+		virtual inline Ret operator()(Event event) override {
+			return f(event);
 		}
 		Handler(Function f) : f(f) {}
 	};
@@ -68,11 +69,11 @@ namespace Win32GameEngine {
 		EventMedium(Next next) : next(next) {}
 	};
 
-	template<derived_from_template<Event> Event, typename Receiver = Handler<Event>>
-	struct EventDistributor : public Win32GameEngine::Receiver<Event> {
+	template<derived_from_template<Event> Event, typename Ret = void, typename Receiver = Handler<Event, Ret>>
+	struct EventDistributor : public Win32GameEngine::Receiver<Event, Ret> {
 		using EventType = Event::_Type;
 		map<EventType, set<Receiver *>> receivers;
-		EventDistributor() : Win32GameEngine::Receiver<Event>() {}
+		EventDistributor() : Win32GameEngine::Receiver<Event, Ret>() {}
 		~EventDistributor() {
 			for(pair<EventType, set<Receiver *>> it : receivers) {
 				set<Receiver *> &type = it.second;
@@ -80,13 +81,44 @@ namespace Win32GameEngine {
 					delete receiver;
 			}
 		}
-		virtual void miss(Event) {}
-		virtual void operator()(Event event) override {
+		virtual Ret miss(Event) {
+			if constexpr(is_same_v<Ret, void>);
+			else
+				return Ret();
+		}
+		inline virtual void propagateup(Event event) {}
+		inline virtual void propagatedown(Event event) {}
+		void propagate(Event event) {
+			switch(event.propagation) {
+			case Propagation::UP:
+				propagateup(event);
+				break;
+			case Propagation::DOWN:
+				propagatedown(event);
+				break;
+			}
+		}
+		virtual Ret operator()(Event event) override {
 			auto it = receivers.find(event.type);
-			if(it == receivers.end())
-				return miss(event);
-			for(auto receiver : it->second)
-				(*receiver)(event);
+			if constexpr(is_same_v<Ret, void>) {
+				if(it == receivers.end())
+					miss(event);
+				else {
+					for(auto receiver : it->second)
+						(*receiver)(event);
+				}
+				propagate(event);
+			} else {
+				Ret res;
+				if(it == receivers.end())
+					res = miss(event);
+				else {
+					for(auto receiver : it->second)
+						res = (*receiver)(event);
+				}
+				propagate(event);
+				return res;
+			}
 		}
 		void add(EventType type, Receiver *receiver) {
 			auto it = receivers.begin();

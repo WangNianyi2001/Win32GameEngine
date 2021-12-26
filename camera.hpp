@@ -29,8 +29,8 @@ namespace Win32GameEngine {
 		float pixel_scale;
 		virtual bool compare(Entity const *a, Entity const *b) override {
 			float
-				az = ((WorldEntity const *)a)->transform->position.value[2],
-				bz = ((WorldEntity const *)b)->transform->position.value[2];
+				az = ((WorldEntity const *)a)->transform.position.value[2],
+				bz = ((WorldEntity const *)b)->transform.position.value[2];
 			return az > bz;
 		}
 		virtual bool validate(Entity const *entity) override {
@@ -53,13 +53,13 @@ namespace Win32GameEngine {
 			WorldTransform &self_transform = *entity->getcomponent<WorldTransform>();
 			Bound screen_clip{
 				buffer_screen({ 0, 0 }),
-				buffer_screen(target.dimension)
+				buffer_screen(target().dimension)
 			};
 			for(Entity *const entity : queue) {
 				Texture *const texture = entity->getcomponent<Texture>();
 				SquareMatrix<4, float>camera_entity =
 					((WorldEntity const *)entity)
-					->transform->world.inverse()
+					->transform.world.inverse()
 					.compose(self_transform.world);
 				Bound screenb = texture->bound
 					.transform(
@@ -73,7 +73,7 @@ namespace Win32GameEngine {
 				for(float y = ymin; y < ymax; y += pixel_scale) {
 					for(float x = xmin; x < xmax; x += pixel_scale) {
 						Vec2F screenp{ x, y };
-						Color *pixel = target.at(screen_buffer(screenp));
+						Color *pixel = target().at(screen_buffer(screenp));
 						if(!pixel)
 							continue;
 						Vec2F texturep = screen_texture(camera_entity, screenp);
@@ -85,11 +85,14 @@ namespace Win32GameEngine {
 		}
 	public:
 		Camera(Entity *entity, float view_size) : Renderer(entity),
-			buffer_shift(Vec2F(target.dimension) * .5f) {
+			buffer_shift(Vec2F(target().dimension) * .5f) {
 			setviewsize(view_size);
 		}
+		virtual Entity *cast(Vec2F) override {
+			return nullptr;
+		}
 		inline float setviewsize(float view_size) {
-			return pixel_scale = view_size / target.dimension.module();
+			return pixel_scale = view_size / target().dimension.module();
 		}
 		inline float setfov(float fov) { setviewsize(tan(fov)); }
 		inline float setfovindegree(int fov) {

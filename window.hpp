@@ -1,39 +1,29 @@
 #pragma once
 
-// Agent for a Win32 window. Used by class Game.
-
 #include "utils.hpp"
 
 namespace Win32GameEngine {
-	// Derive a struct from templated struct Event to store
-	// events passed from Win32 API.
 	struct SystemEventData {
 		HWND handle;
-		WPARAM wParam;
-		LPARAM lParam;
+		WPARAM w;
+		LPARAM l;
 	};
 	struct SystemEvent : Event<UINT> {
 		SystemEventData data;
-		void defaultBehavior() {
-			DefWindowProc(data.handle, type, data.wParam, data.lParam);
+		inline LRESULT def() {
+			return DefWindowProc(data.handle, type, data.w, data.l);
 		}
 	};
 	using SystemHandler = Handler<SystemEvent>;
 
-	// THE agent class. Provides initialization & simple operations on windows.
-	// Distributes system events to custom handlers.
 	class Window {
 	public:
-		struct Distributor : EventDistributor<SystemEvent> {
-			virtual void miss(SystemEvent event) override {
-				event.defaultBehavior();
+		struct Distributor : EventDistributor<SystemEvent, LRESULT> {
+			virtual inline LRESULT miss(SystemEvent event) override {
+				return event.def();
 			}
 		};
 		Distributor events;
-		// Window styles, can be specified when constructing.
-		// ASIS - set position to explicitly written value,
-		// CENTERED - center window by the screen position,
-		// FULLSCREEN - fill the entire screen with the window.
 		enum class Style {
 			ASIS, CENTERED, FULLSCREEN
 		};
@@ -51,26 +41,25 @@ namespace Win32GameEngine {
 			Style style = Style::ASIS;
 			bool dpi_aware = true;
 		};
-		InitArg args;	// Stores a copy of the initializing arguments for later reference
-		static inline Vec2I screen{	// Screen size.
+		InitArg args;
+		static inline Vec2I screen{
 			GetSystemMetrics(SM_CXSCREEN),
 			GetSystemMetrics(SM_CYSCREEN)
 		};
 	private:
 		using HWndMap = map<HWND, Window *>;
-		inline static HWndMap handles = HWndMap();	// Reference for callback routing.
+		inline static HWndMap handles = HWndMap();
 		static LRESULT CALLBACK event_processor(HWND handle, UINT type, WPARAM w, LPARAM l) {
-			// Look up for corresponding window by handle.
-			// Had to implement this way due to the early age C-style API design.
+			SystemEvent event{ type, Propagation::NONE, SystemEventData{ handle, w, l } };
 			auto it = Window::handles.find(handle);
 			if(it == Window::handles.end())
-				return DefWindowProc(handle, type, w, l);	// If not found, process by default.
-			it->second->events({ type, SystemEventData{ handle, w, l }});
-			return 0;
+				return event.def();
+			return it->second->events(event);
 		}
 	public:
 		HWND handle;
-		Window(InitArg const args) : args(args) {
+		Bitmap buffer;
+		Window(InitArg const args) : args(args), buffer(args.size) {
 			if(!args.dpi_aware)
 				SetProcessDPIAware();
 			WNDCLASS window_class = {
@@ -90,7 +79,7 @@ namespace Win32GameEngine {
 				args.class_name, args.title, WS_POPUP,
 				args.position.at(0), args.position.at(1),
 				args.size.at(0), args.size.at(1),
-				nullptr, nullptr, nullptr, nullptr
+				nullptr, nullptr, nullptr, args.instance
 			);
 			handles.insert(pair(handle, this));
 		}
@@ -109,7 +98,7 @@ namespace Win32GameEngine {
 		void update() {
 			MSG message;
 			while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
-				TranslateMessage(&message);
+				// TranslateMessage(&message);
 				DispatchMessage(&message);
 			}
 		}
@@ -128,11 +117,7 @@ namespace Win32GameEngine {
 			ShowWindow(handle, SW_RESTORE);
 			BringWindowToTop(handle);
 		}
-		void invalidate(bool erase = false) {
-			InvalidateRect(handle, nullptr, erase);
-		}
 	};
-
-	// Ensure source compiling sequence
-	auto _ = []() {};
+	
+	auto _ = []() {};	// Ensure source compiling sequence
 }

@@ -43,9 +43,9 @@ namespace Win32GameEngine {
 	template<typename T>
 	class TransformEntity : public Entity {
 	public:
-		T *transform;
+		T &transform;
 		TransformEntity(Scene *scene) : Entity(scene),
-			transform(makecomponent<T>()) {
+			transform(*makecomponent<T>()) {
 			scene->addentity(this);
 		}
 	};

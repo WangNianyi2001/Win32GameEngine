@@ -24,12 +24,12 @@ int WINAPI WIN32ENTRY(
 	using namespace Win32GameEngine;
 	if(!game)
 		return 0;
+	game->hinst = hInstance;
 	try {
-		game->activate();
-		for(; game->isactive(); )
-			game->update();
+		for(game->start(); game->isactive(); game->update());
 	} catch(ConstString msg) {
 		MessageBox(game->window->handle, msg, L"Error", MB_OK);
 	}
+	DestroyWindow(game->window->handle);
 	return 0;
 }

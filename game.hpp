@@ -11,16 +11,13 @@ namespace Win32GameEngine {
 	class Component;
 
 	enum class GameEventType {
+		INIT, QUIT,
 		UPDATE, POSTUPDATE,
 		PAINT, POSTPAINT,
 		MOUSEDOWN, MOUSEUP, CLICK,
 		ACTIVATE, INACTIVATE,
 	};
 	struct GameEvent : Event<GameEventType> {
-		enum class Propagation {
-			NONE = 0, UP = 1, DOWN = 2
-		};
-		Propagation propagation = Propagation::NONE;
 	};
 
 	class GameObject : public EventDistributor<GameEvent> {
@@ -30,19 +27,6 @@ namespace Win32GameEngine {
 		GameObject(bool active = true) : active(false) {
 			if(active)
 				activate();
-		}
-		inline virtual void propagateup(GameEvent event) {}
-		inline virtual void propagatedown(GameEvent event) {}
-		virtual void operator()(GameEvent event) override {
-			EventDistributor<GameEvent>::operator()(event);
-			switch(event.propagation) {
-			case GameEvent::Propagation::UP:
-				propagateup(event);
-				break;
-			case GameEvent::Propagation::DOWN:
-				propagatedown(event);
-				break;
-			}
 		}
 		inline bool isactive() const { return active; }
 		inline void activate() {
@@ -138,47 +122,56 @@ namespace Win32GameEngine {
 		Ticker frame;
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
-	protected:
-		Ticker time;
 	public:
-		Window *const window;
-		Bitmap buffer;
+		Window *window;
+		HINSTANCE hinst;
 		bool clear_frame_buffer;
 		set<Scene *> scenes;
-		Game(Window *const w) : GameObject(false),
-			hdc(nullptr), window(w),
-			clear_frame_buffer(true), buffer(window->args.size),
+		Ticker time;
+		Game() : GameObject(false),
+			hdc(nullptr), window(nullptr),
+			clear_frame_buffer(true),
 			time(), frame(0)
-		{
+		{}
+		void start() {
+			operator()({ GameEventType::INIT });
+
 			// System events redirection
 			for(UINT type : vector<UINT>{ WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN }) {
-				window->events.add(type, [&](SystemEvent) {
-					operator()({ GameEventType::MOUSEDOWN, GameEvent::Propagation::DOWN });
+				window->events.add(type, [&](SystemEvent event) {
+					operator()({ GameEventType::MOUSEDOWN, Propagation::DOWN });
+					return event.def();
 				});
 			}
 			for(UINT type : vector<UINT>{ WM_LBUTTONUP, WM_MBUTTONUP, WM_RBUTTONUP }) {
-				window->events.add(type, [&](SystemEvent) {
-					operator()({ GameEventType::MOUSEUP, GameEvent::Propagation::DOWN });
+				window->events.add(type, [=](SystemEvent event) {
+					operator()({ GameEventType::MOUSEUP, Propagation::DOWN });
+					return event.def();
 				});
 			}
-			window->events.add(WM_PAINT, [&](SystemEvent) {
-				operator()({ GameEventType::PAINT, GameEvent::Propagation::DOWN });
-				operator()({ GameEventType::POSTPAINT, GameEvent::Propagation::DOWN });
+			window->events.add(WM_PAINT, [&](SystemEvent event) {
+				operator()({ GameEventType::PAINT, Propagation::DOWN });
+				operator()({ GameEventType::POSTPAINT, Propagation::DOWN });
+				return event.def();
 			});
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
-				switch(event.data.wParam) {
+				switch(event.data.w) {
+				case SC_MAXIMIZE:
+					return (LRESULT)0;
 				case SC_RESTORE:
 					window->restore();
 					break;
-				case SC_MINIMIZE:
-					// Minimizing window is prohibited due to restoring problem
-					return;
-				default:
-					event.defaultBehavior();
 				}
+				return event.def();
 			});
-			window->events.add(WM_DESTROY, [&](SystemEvent) { inactivate(); });
-			window->events.add(WM_QUIT, [&](SystemEvent) { PostQuitMessage(0); });
+			window->events.add(WM_CLOSE, [&](SystemEvent event) {
+				operator()({ GameEventType::QUIT, Propagation::DOWN });
+				return event.def();
+			});
+			window->events.add(WM_DESTROY, [&](SystemEvent event) {
+				PostQuitMessage(0);
+				return event.def();
+			});
 
 			// In-game events logic
 			add(GameEventType::UPDATE, [&](GameEvent) {
@@ -195,7 +188,7 @@ namespace Win32GameEngine {
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
 				if(clear_frame_buffer) {
-					HDC bdc = buffer.getdc();
+					HDC bdc = window->buffer.getdc();
 					SelectObject(bdc, GetStockObject(NULL_PEN));
 					SelectObject(bdc, window->args.background_brush);
 					Vec2I s = window->args.size;
@@ -204,10 +197,12 @@ namespace Win32GameEngine {
 				hdc = BeginPaint(window->handle, ps);
 			});
 			add(GameEventType::POSTPAINT, [&](GameEvent) {
-				Vec2I s = buffer.dimension;
-				BitBlt(hdc, 0, 0, s[0], s[1], buffer.getdc(), 0, 0, SRCCOPY);
+				Vec2I s = window->buffer.dimension;
+				BitBlt(hdc, 0, 0, s[0], s[1], window->buffer.getdc(), 0, 0, SRCCOPY);
 				EndPaint(window->handle, ps);
 			});
+
+			activate();
 		}
 		virtual void propagatedown(GameEvent event) override {
 			for(Scene *scene : scenes) {
@@ -224,8 +219,8 @@ namespace Win32GameEngine {
 		}
 		void update() {
 			resolve();
-			operator()({ GameEventType::UPDATE, GameEvent::Propagation::DOWN });
-			operator()({ GameEventType::POSTUPDATE, GameEvent::Propagation::DOWN });
+			operator()({ GameEventType::UPDATE, Propagation::DOWN });
+			operator()({ GameEventType::POSTUPDATE, Propagation::DOWN });
 		}
 		void repaint() {
 			InvalidateRect(window->handle, nullptr, true);

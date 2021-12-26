@@ -108,10 +108,11 @@ namespace Win32GameEngine {
 
 	class Renderer : public Component {
 	protected:
-		Bitmap &target;
+		inline Bitmap &target() {
+			return entity->scene->game->window->buffer;
+		}
 		vector<Entity *> queue;
 		Renderer(Entity *entity) : Component(entity),
-			target(entity->scene->game->buffer),
 			queue(),
 			clear_on_paint(false) {
 			add(GameEventType::PAINT, [=](GameEvent) {
@@ -132,25 +133,29 @@ namespace Win32GameEngine {
 				sample();
 				transfer();
 			});
+			add(GameEventType::MOUSEDOWN, [=](GameEvent) {
+				int a = 1;
+			});
 		}
 		virtual bool validate(Entity const *entity) = 0;
 		virtual bool compare(Entity const *a, Entity const *b) = 0;
 		inline void clear() {
-			memset(target.data.get(), 0, target.size * sizeof(Color));
+			memset(target().data.get(), 0, target().size * sizeof(Color));
 		}
 		virtual void sample() = 0;
 		void transfer() {
-			Bitmap &buffer = entity->scene->game->buffer;
-			Vec2I bs = buffer.dimension, s = target.dimension;
+			Bitmap &buffer = entity->scene->game->window->buffer;
+			Vec2I bs = buffer.dimension, s = target().dimension;
 			AlphaBlend(
 				buffer.getdc(),
 				0, 0, bs[0], bs[1],
-				target.getdc(),
+				target().getdc(),
 				0, 0, s[0], s[1],
 				blend_function
 			);
 		}
 	public:
+		virtual Entity *cast(Vec2F screenp) = 0;
 		bool clear_on_paint;
 	};
 }
