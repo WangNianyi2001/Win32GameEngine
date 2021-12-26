@@ -19,7 +19,7 @@ namespace Win32GameEngine {
 			}
 			return true;
 		}
-		bool operator!=(_Vector<D, T> const &v) const {
+		inline bool operator!=(_Vector<D, T> const &v) const {
 			return !operator==(v);
 		}
 		template<typename S>
@@ -47,9 +47,7 @@ namespace Win32GameEngine {
 				res += at(i) * v.at(i);
 			return res;
 		}
-		T module() const {
-			return sqrt(dot(*this));
-		}
+		inline T module() const { return (T)sqrt(dot(*this)); }
 		template<typename V>
 		Impl scale(V const &v) const {
 			Impl res;

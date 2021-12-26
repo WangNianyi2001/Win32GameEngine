@@ -144,15 +144,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="basics.hpp" />
+    <ClInclude Include="utils.hpp" />
     <ClInclude Include="buffer.hpp" />
     <ClInclude Include="camera.hpp" />
     <ClInclude Include="event.hpp" />
-    <ClInclude Include="file.hpp" />
     <ClInclude Include="game.hpp" />
-    <ClInclude Include="gameobject.hpp" />
     <ClInclude Include="linear.hpp" />
-    <ClInclude Include="transform.hpp" />
+    <ClInclude Include="render.hpp" />
+    <ClInclude Include="vanilla.hpp" />
+    <ClInclude Include="world.hpp" />
     <ClInclude Include="ui.hpp" />
     <ClInclude Include="texture.hpp" />
     <ClInclude Include="win32ge.hpp" />

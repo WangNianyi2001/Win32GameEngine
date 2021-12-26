@@ -2,9 +2,7 @@
 
 // Agent for a Win32 window. Used by class Game.
 
-#include "basics.hpp"
-#include <windows.h>
-#include "event.hpp"
+#include "utils.hpp"
 
 namespace Win32GameEngine {
 	// Derive a struct from templated struct Event to store

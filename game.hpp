@@ -1,21 +1,44 @@
 #pragma once
 
-// Basic levels of object organization of the game.
-// Includes a few classes, see below.
-
-#include "window.hpp"
-#include "gameobject.hpp"
-#include "buffer.hpp"
 #include <algorithm>
+#include <set>
+#include "utils.hpp"
 
 namespace Win32GameEngine {
-	// The most basic types of game object, listed top-down logically.
 	class Game;
 	class Scene;
 	class Entity;
 	class Component;
 
-	// Components are the abilities an entity have.
+	enum class GameEventType {
+		UPDATE, PAINT,
+		ACTIVATE, INACTIVATE,
+	};
+	struct GameEvent : Event<GameEventType> {};
+
+	class GameObject : public EventDistributor<GameEvent> {
+	private:
+		bool active;
+	public:
+		GameObject(bool active = true) : active(false) {
+			if(active)
+				activate();
+		}
+		inline bool isactive() const { return active; }
+		inline void activate() {
+			if(active)
+				return;
+			active = true;
+			operator()({ GameEventType::ACTIVATE });
+		}
+		inline void inactivate() {
+			if(!active)
+				return;
+			active = false;
+			operator()({ GameEventType::INACTIVATE });
+		}
+	};
+
 	class Component : public GameObject {
 		friend Entity;
 	protected:
@@ -28,7 +51,6 @@ namespace Win32GameEngine {
 		}
 	};
 
-	// Game objects that can exist in a scene.
 	class Entity : public GameObject {
 		friend Scene;
 	protected:
@@ -46,14 +68,13 @@ namespace Win32GameEngine {
 				}
 			});
 		}
-	public:
-		Scene *const scene;
-		set<Component *> components;
-		Entity *parent;
 		virtual ~Entity() {
 			for(Component *component : components)
 				delete component;
 		}
+	public:
+		Scene *const scene;
+		set<Component *> components;
 		Component *addcomponent(Component *component) {
 			components.insert(component);
 			return component;
@@ -73,7 +94,6 @@ namespace Win32GameEngine {
 		}
 	};
 
-	// Physical separation of entities.
 	class Scene : public GameObject {
 		friend Game;
 	protected:
@@ -91,13 +111,13 @@ namespace Win32GameEngine {
 				}
 			});
 		}
-	public:
-		Game *const game;
-		set<Entity *> entities;
 		virtual ~Scene() {
 			for(Entity *entity : entities)
 				delete entity;
 		}
+	public:
+		Game *const game;
+		set<Entity *> entities;
 		Entity *addentity(Entity *entity) {
 			entities.insert(entity);
 			return entity;
@@ -105,15 +125,8 @@ namespace Win32GameEngine {
 		inline Entity *makeentity() {
 			return addentity(new Entity(this));
 		}
-		template<derived_from<Component> Component, typename ...Args>
-		inline Entity *makeentity(Args ...args) {
-			return makeentity()->makecomponent<Component>(args...)->entity;
-		}
 	};
 
-	// The instance of the entire game, communicates with the Win32 API,
-	// handles scene management, provides a runtime-long environment for
-	// game objects to interact internally with.
 	class Game : public GameObject {
 	private:
 		Ticker frame;
@@ -125,7 +138,8 @@ namespace Win32GameEngine {
 		Window *const window;
 		Bitmap buffer;
 		set<Scene *> scenes;
-		Game(Window *const w) : GameObject(false), window(w),
+		Game(Window *const w) : GameObject(false),
+			hdc(nullptr), window(w),
 			buffer(window->args.size), time(), frame(0)
 		{
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
@@ -183,16 +197,5 @@ namespace Win32GameEngine {
 		}
 		void setupdaterate(ULONGLONG rate) { time.setrate(rate); }
 		void setfps(ULONGLONG fps) { this->frame.setrate(fps ? 1000 / fps : 0); }
-	};
-
-	class Renderer : public Component {
-	protected:
-		Bitmap &target;
-		Renderer(Entity *entity) : Component(entity),
-			target(entity->scene->game->buffer) {}
-		virtual void sample() = 0;
-		inline void clear() {
-			memset(target.data.get(), 0, target.size * sizeof(Color));
-		}
 	};
 }

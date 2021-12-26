@@ -1,13 +1,12 @@
 #pragma once
 
-#include "game.hpp"
-#include "transform.hpp"
-#include "texture.hpp"
+#include "render.hpp"
+#include "world.hpp"
 
 namespace Win32GameEngine {
 	class Camera : public Renderer {
 	protected:
-		static Vec2F screen_uv(
+		static Vec2F screen_texture(
 			SquareMatrix<4, float> const &camera_entity, Vec2F screenp
 		) {
 			Vec4F top = screenp;
@@ -19,10 +18,10 @@ namespace Win32GameEngine {
 			top = top * z + bottom;
 			return camera_entity(top);
 		}
-		static Vec2F uv_screen(
-			SquareMatrix<4, float> const &entity_camera, Vec2F uvp
+		static Vec2F texture_screen(
+			SquareMatrix<4, float> const &entity_camera, Vec2F texturep
 		) {
-			Vec4F augmented = uvp;
+			Vec4F augmented = texturep;
 			augmented[3] = 1;
 			Vec4F camerap = entity_camera(augmented);
 			return camerap * (1 / camerap[2]);
@@ -31,18 +30,18 @@ namespace Win32GameEngine {
 		float pixel_scale;
 		bool compare(Entity const *a, Entity const *b) {
 			float
-				az = a->getcomponent<Transform>()->position.value[2],
-				bz = b->getcomponent<Transform>()->position.value[2];
+				az = ((WorldEntity const *)a)->transform.position.value[2],
+				bz = ((WorldEntity const *)b)->transform.position.value[2];
 			return az > bz;
 		}
 		static bool validate(Entity const *entity) {
 			if(!entity->isactive())
 				return false;
-			Texture *const uv = entity->getcomponent<Texture>();
-			if(!uv || !uv->isactive())
+			WorldEntity const *world = dynamic_cast<WorldEntity const *>(entity);
+			if(!world)
 				return false;
-			Transform *const entity_transform = entity->getcomponent<Transform>();
-			if(!entity_transform || !entity_transform->isactive())
+			Texture *const texture = entity->getcomponent<Texture>();
+			if(!texture || !texture->isactive())
 				return false;
 			return true;
 		}
@@ -81,7 +80,9 @@ namespace Win32GameEngine {
 			return pixel_scale = view_size / target.dimension.module();
 		}
 		inline float setfov(float fov) { setviewsize(tan(fov)); }
-		inline float setfovindegree(int fov) { setviewsize(tan(fov * (atan(1) / 90))); }
+		inline float setfovindegree(int fov) {
+			setviewsize((float)tan(fov * (atan(1) / 90)));
+		}
 		inline Vec2I screen_buffer(Vec2F screenp) const {
 			return screenp * (1 / pixel_scale) + buffer_shift;
 		}
@@ -95,14 +96,14 @@ namespace Win32GameEngine {
 				buffer_screen(target.dimension)
 			};
 			for(Entity *const entity : queue) {
-				Texture *const uv = entity->getcomponent<Texture>();
-				SquareMatrix<4, float>camera_entity = entity
-					->getcomponent<Transform>()
-					->world.inverse()
+				Texture *const texture = entity->getcomponent<Texture>();
+				SquareMatrix<4, float>camera_entity =
+					((WorldEntity const *)entity)
+					->transform.world.inverse()
 					.compose(self_transform.world);
-				RectBound screenb = uv->bound
+				RectBound screenb = texture->bound
 					.transform(
-						bind_front(uv_screen, camera_entity.inverse())
+						bind_front(texture_screen, camera_entity.inverse())
 					).clip(screen_clip);
 				float const
 					ymin = screenb.min[1],
@@ -115,12 +116,20 @@ namespace Win32GameEngine {
 						Color *pixel = target.at(screen_buffer(screenp));
 						if(!pixel)
 							continue;
-						Vec2F uvp = screen_uv(camera_entity, screenp);
-						if(uv->hit(uvp))
-							*pixel = *pixel + uv->sample(uvp);
+						Vec2F texturep = screen_texture(camera_entity, screenp);
+						if(texture->hit(texturep))
+							*pixel = *pixel + texture->sample(texturep);
 					}
 				}
 			}
 		}
+	};
+
+	class CameraEntity : public WorldEntity {
+	public:
+		Camera &camera;
+		CameraEntity(Scene *scene, float view_size) : WorldEntity(scene),
+			camera(*makecomponent<Camera>(view_size))
+		{}
 	};
 }

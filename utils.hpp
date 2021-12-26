@@ -3,8 +3,7 @@
 #define NOMINMAX
 
 #include <windows.h>
-
-#include "linear.hpp"
+#include <filesystem>
 
 namespace Win32GameEngine {
 	using namespace std;
@@ -32,4 +31,31 @@ namespace Win32GameEngine {
 		void setrate(ULONGLONG rate) { this->rate = rate; }
 		inline bool isup() const { return rate && elapsed() >= rate; }
 	};
+	struct File {
+		unsigned char *data;
+		int size;
+		File(ConstString url) : data(nullptr), size(-1) {
+			auto path = filesystem::current_path();
+			path.append(url);
+			url = path.c_str();
+			FILE *file = nullptr;
+			_wfopen_s(&file, url, L"rb");
+			if(!file)
+				throw L"File not found.";
+			fseek(file, 0, SEEK_END);
+			size = ftell(file);
+			fseek(file, 0, SEEK_SET);
+			data = new unsigned char[size];
+			fread(data, 1, size, file);
+			fclose(file);
+		}
+		~File() {
+			delete[] data;
+		}
+	};
 }
+
+#include "linear.hpp"
+#include "buffer.hpp"
+#include "event.hpp"
+#include "window.hpp"

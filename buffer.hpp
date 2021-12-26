@@ -1,7 +1,6 @@
 #pragma once
 
-#include "basics.hpp"
-#include "file.hpp"
+#include "utils.hpp"
 
 namespace Win32GameEngine {
 	template<typename Index>
@@ -73,7 +72,7 @@ namespace Win32GameEngine {
 			typename Color::Channel *start = file.data + header->bfOffBits;
 			switch(info->bmiHeader.biBitCount) {
 			case 32:
-				for(int i = 0, o = 0; i < bitmap.size; ++i) {
+				for(unsigned i = 0, o = 0; i < bitmap.size; ++i) {
 					o = i * 4;
 					data[i] = Color(start[o], start[o + 1], start[o + 2], start[o + 3]);
 					if(start[o + 3] != 255) {
@@ -82,7 +81,7 @@ namespace Win32GameEngine {
 				}
 				break;
 			case 24:
-				for(int i = 0, o = 0; i < bitmap.size; ++i) {
+				for(unsigned i = 0, o = 0; i < bitmap.size; ++i) {
 					o = i * 3;
 					data[i] = Color(start[o], start[o + 1], start[o + 2]);
 				}

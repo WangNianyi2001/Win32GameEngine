@@ -57,12 +57,11 @@ namespace Win32GameEngine {
 		}
 	};
 
-	class SolidEntity : public Entity {
+	class WorldEntity : public Entity {
 	public:
 		Transform &transform;
-		SolidEntity(Scene *scene) : Entity(scene),
-			transform(*(Transform *)makecomponent<Transform>()) {
-			scene->addentity(this);
-		}
+		WorldEntity(Scene *scene) : Entity(scene),
+			transform(*makecomponent<Transform>())
+		{ scene->addentity(this); }
 	};
 }
