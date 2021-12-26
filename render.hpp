@@ -4,15 +4,15 @@
 #include "transform.hpp"
 
 namespace Win32GameEngine {
-	struct RectBound {
+	struct Bound {
 		using V = Vec2F;
 		V min, max;
-		RectBound() : min{ INFINITY, INFINITY }, max{ -INFINITY, -INFINITY } {}
-		RectBound(V min, V max) : RectBound() {
+		Bound() : min{ INFINITY, INFINITY }, max{ -INFINITY, -INFINITY } {}
+		Bound(V min, V max) : Bound() {
 			add(min);
 			add(max);
 		}
-		RectBound(RectBound const &r) : RectBound(V(r.min), V(r.max)) {}
+		Bound(Bound const &r) : Bound(V(r.min), V(r.max)) {}
 		V topleft() const { return min; }
 		V topright() const { return { max[0], min[1] }; }
 		V bottomright() const { return max; }
@@ -23,19 +23,19 @@ namespace Win32GameEngine {
 			max[0] = std::max(point[0], max[0]);
 			max[1] = std::max(point[1], max[1]);
 		}
-		RectBound transform(function<V(V)> f) const {
-			RectBound res;
+		Bound transform(function<V(V)> f) const {
+			Bound res;
 			res.add(f(topleft()));
 			res.add(f(topright()));
 			res.add(f(bottomleft()));
 			res.add(f(bottomright()));
 			return res;
 		}
-		RectBound transform(SquareMatrix<3, float> m) const {
+		Bound transform(SquareMatrix<3, float> m) const {
 			return transform([&](Vec2F v) { return m(v); });
 		}
-		RectBound clip(RectBound r) const {
-			RectBound res;
+		Bound clip(Bound r) const {
+			Bound res;
 			res.min[0] = std::max(r.min[0], min[0]);
 			res.min[1] = std::max(r.min[1], min[1]);
 			res.max[0] = std::min(r.max[0], max[0]);
@@ -47,21 +47,21 @@ namespace Win32GameEngine {
 	class Texture : public Component {
 	public:
 		Vec2F size, anchor;
-		RectBound bound;
+		Bound bound;
 		Texture(Entity *entity, Vec2F size, Vec2F anchor) :
 			Component(entity), size(size), anchor(anchor),
-			bound(RectBound(anchor * -1, size - anchor)) {
+			bound(Bound(anchor * -1, size - anchor)) {
 		}
 		void setanchor(Vec2F a) {
 			anchor = a;
-			bound = RectBound(a * -1, size - a);
+			bound = Bound(a * -1, size - a);
 		}
 		virtual bool hit(Vec2F uv) const {
 			float x = uv[0], y = uv[1];
 			return (x < bound.max[0]) && (x >= bound.min[0]) && (y < bound.max[1]) && (y >= bound.min[1]);
 		}
 		virtual Color sample(Vec2F uv) const = 0;
-		virtual void put(HDC hdc, RectBound bound) = 0;
+		virtual void put(HDC hdc, Bound bound) = 0;
 	};
 
 	class ColorBox : public Texture {
@@ -72,7 +72,7 @@ namespace Win32GameEngine {
 		}
 		ColorBox(Entity *entity, Color color, Vec2F size) : ColorBox(entity, color, size, size * .5f) {}
 		inline virtual Color sample(Vec2F uv) const override { return color; }
-		virtual void put(HDC hdc, RectBound bound) override {
+		virtual void put(HDC hdc, Bound bound) override {
 			// TODO
 		}
 	};
@@ -94,11 +94,11 @@ namespace Win32GameEngine {
 				return Color();
 			return *color;
 		}
-		virtual void put(HDC hdc, RectBound bound) override {
-			Vec2F pos_dest = bound.topleft(), size_dest = bound.bottomright() - pos_dest;
+		virtual void put(HDC hdc, Bound bound) override {
+			Vec2I pos = bound.topleft(), size = bound.bottomright() - pos;
 			AlphaBlend(
 				hdc,
-				pos_dest[0], pos_dest[1], size_dest[0], size_dest[1],
+				pos[0], pos[1], size[0], size[1],
 				bitmap.getdc(),
 				0, 0, bitmap.dimension[0], bitmap.dimension[1],
 				blend_function

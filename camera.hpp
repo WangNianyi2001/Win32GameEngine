@@ -51,7 +51,7 @@ namespace Win32GameEngine {
 		}
 		virtual void sample() override {
 			WorldTransform &self_transform = *entity->getcomponent<WorldTransform>();
-			RectBound screen_clip{
+			Bound screen_clip{
 				buffer_screen({ 0, 0 }),
 				buffer_screen(target.dimension)
 			};
@@ -61,7 +61,7 @@ namespace Win32GameEngine {
 					((WorldEntity const *)entity)
 					->transform.world.inverse()
 					.compose(self_transform.world);
-				RectBound screenb = texture->bound
+				Bound screenb = texture->bound
 					.transform(
 						bind_front(texture_screen, camera_entity.inverse())
 					).clip(screen_clip);

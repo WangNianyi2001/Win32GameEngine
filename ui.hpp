@@ -23,7 +23,7 @@ namespace Win32GameEngine {
 			for(Entity *const entity : queue) {
 				ScreenEntity *se = (ScreenEntity *)entity;
 				Texture *const texture = entity->getcomponent<Texture>();
-				RectBound bound = texture->bound.transform([&](Vec2F v) {
+				Bound bound = texture->bound.transform([&](Vec2F v) {
 					Vec3F a = v;
 					a[2] = 1;
 					return se->transform.world(a);
