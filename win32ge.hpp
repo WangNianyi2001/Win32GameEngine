@@ -24,7 +24,6 @@ int WINAPI WIN32ENTRY(
 	using namespace Win32GameEngine;
 	if(!game)
 		return 0;
-	game->hinst = hInstance;
 	try {
 		for(game->start(); game->isactive(); game->update());
 	} catch(ConstString msg) {

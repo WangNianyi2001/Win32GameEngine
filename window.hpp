@@ -98,7 +98,7 @@ namespace Win32GameEngine {
 		void update() {
 			MSG message;
 			while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
-				// TranslateMessage(&message);
+				TranslateMessage(&message);
 				DispatchMessage(&message);
 			}
 		}

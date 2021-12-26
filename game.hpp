@@ -123,19 +123,15 @@ namespace Win32GameEngine {
 		PAINTSTRUCT *ps = new PAINTSTRUCT{};
 		HDC hdc;
 	public:
-		Window *window;
-		HINSTANCE hinst;
+		Window *const window;
 		bool clear_frame_buffer;
 		set<Scene *> scenes;
 		Ticker time;
-		Game() : GameObject(false),
-			hdc(nullptr), window(nullptr),
+		Game(Window *window) : GameObject(false),
+			hdc(nullptr), window(window),
 			clear_frame_buffer(true),
 			time(), frame(0)
-		{}
-		void start() {
-			operator()({ GameEventType::INIT });
-
+		{
 			// System events redirection
 			for(UINT type : vector<UINT>{ WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN }) {
 				window->events.add(type, [&](SystemEvent event) {
@@ -186,7 +182,7 @@ namespace Win32GameEngine {
 					frame.tick();
 				}
 			});
-			add(GameEventType::PAINT, [&](GameEvent) {
+			add(GameEventType::PAINT, [=](GameEvent) {
 				if(clear_frame_buffer) {
 					HDC bdc = window->buffer.getdc();
 					SelectObject(bdc, GetStockObject(NULL_PEN));
@@ -196,12 +192,15 @@ namespace Win32GameEngine {
 				}
 				hdc = BeginPaint(window->handle, ps);
 			});
-			add(GameEventType::POSTPAINT, [&](GameEvent) {
+			add(GameEventType::POSTPAINT, [=](GameEvent) {
 				Vec2I s = window->buffer.dimension;
 				BitBlt(hdc, 0, 0, s[0], s[1], window->buffer.getdc(), 0, 0, SRCCOPY);
 				EndPaint(window->handle, ps);
 			});
-
+		}
+		void start() {
+			window->init();
+			operator()({ GameEventType::INIT });
 			activate();
 		}
 		virtual void propagatedown(GameEvent event) override {
