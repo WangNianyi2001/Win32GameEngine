@@ -3,18 +3,10 @@
 #include "game.hpp"
 
 namespace Win32GameEngine {
-	template<unsigned D>
+	template<unsigned D, typename Impl>
 	class Transform : public Component {
-		using Matrix = SquareMatrix<D, float>;
-	protected:
-		Transform *parent;
-		set<Transform *> children;
-		virtual void updatelocal() = 0;
-		virtual void updateworld() {
-			world = parent ? parent->world.compose(local) : local;
-		}
-		virtual void update() = 0;
 	public:
+		using Matrix = SquareMatrix<D, float>;
 		template<typename T>
 		struct Attribute {
 			Transform *const transform;
@@ -30,26 +22,35 @@ namespace Win32GameEngine {
 			}
 		};
 		Matrix local, world;
-		Transform(Entity *entity) : Component(entity) {}
+		Transform *parent;
+		set<Transform *> children;
+		Transform(Entity *entity) : Component(entity),
+			parent(nullptr), children() {
+			this->update();
+		}
+		virtual void updatelocal() = 0;
+		virtual void updateworld() {
+			world = parent ? parent->world.compose(local) : local;
+		}
+		void update() {
+			((Impl *)this)->Impl::updatelocal();
+			updateworld();
+			for(Transform *child : children)
+				child->updateworld();
+		}
 	};
 
 	template<typename T>
 	class TransformEntity : public Entity {
 	public:
-		T &transform;
+		T *transform;
 		TransformEntity(Scene *scene) : Entity(scene),
-			transform(*makecomponent<T>()) {
+			transform(makecomponent<T>()) {
 			scene->addentity(this);
 		}
 	};
 
-	struct WorldTransform : Transform<4> {
-	protected:
-		WorldTransform *parent;
-		set<WorldTransform *> children;
-		inline void updateworld() {
-			world = parent ? parent->world.compose(local) : local;
-		}
+	struct WorldTransform : public Transform<4, WorldTransform> {
 	public:
 		Attribute<Vec3F> position;
 		Attribute<float> rotation;
@@ -57,9 +58,7 @@ namespace Win32GameEngine {
 		WorldTransform(Entity *entity) : Transform(entity),
 			position(this, Vec3F{ 0, 0, 0 }),
 			rotation(this, .0f),
-			scale(this, { 1, 1, 1 }),
-			parent(nullptr), children() {
-			update();
+			scale(this, { 1, 1, 1 }) {
 		}
 		void setparent(WorldTransform *t) {
 			if(parent)
@@ -78,22 +77,11 @@ namespace Win32GameEngine {
 			local.row(1) = Vec2F{ x * s, y * c };
 			local.col(3) = position();
 		}
-		virtual void update() override {
-			updatelocal();
-			updateworld();
-			for(WorldTransform *child : children)
-				child->updateworld();
-		}
 	};
 
 	using WorldEntity = TransformEntity<WorldTransform>;
 
-	class ScreenTransform : public Transform<3> {
-		ScreenTransform *parent;
-		set<ScreenTransform *> children;
-		inline void updateworld() {
-			world = parent ? parent->world.compose(local) : local;
-		}
+	class ScreenTransform : public Transform<3, ScreenTransform> {
 	public:
 		Attribute<Vec2F> position;
 		Attribute<float> z;
@@ -102,7 +90,6 @@ namespace Win32GameEngine {
 			position(this, { 0, 0 }),
 			z(this, 0),
 			scale(this, { 1, 1 }) {
-			update();
 		}
 		void setparent(ScreenTransform *t) {
 			if(parent)
@@ -116,12 +103,6 @@ namespace Win32GameEngine {
 			diag[2] = 1;
 			local.diag() = diag;
 			local.col(2) = position();
-		}
-		virtual void update() override {
-			updatelocal();
-			updateworld();
-			for(ScreenTransform *child : children)
-				child->updateworld();
 		}
 	};
 

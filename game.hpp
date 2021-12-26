@@ -11,10 +11,17 @@ namespace Win32GameEngine {
 	class Component;
 
 	enum class GameEventType {
-		UPDATE, PAINT,
+		UPDATE, POSTUPDATE,
+		PAINT, POSTPAINT,
+		MOUSEDOWN, MOUSEUP, CLICK,
 		ACTIVATE, INACTIVATE,
 	};
-	struct GameEvent : Event<GameEventType> {};
+	struct GameEvent : Event<GameEventType> {
+		enum class Propagation {
+			NONE = 0, UP = 1, DOWN = 2
+		};
+		Propagation propagation = Propagation::NONE;
+	};
 
 	class GameObject : public EventDistributor<GameEvent> {
 	private:
@@ -23,6 +30,19 @@ namespace Win32GameEngine {
 		GameObject(bool active = true) : active(false) {
 			if(active)
 				activate();
+		}
+		inline virtual void propagateup(GameEvent event) {}
+		inline virtual void propagatedown(GameEvent event) {}
+		virtual void operator()(GameEvent event) override {
+			EventDistributor<GameEvent>::operator()(event);
+			switch(event.propagation) {
+			case GameEvent::Propagation::UP:
+				propagateup(event);
+				break;
+			case GameEvent::Propagation::DOWN:
+				propagatedown(event);
+				break;
+			}
 		}
 		inline bool isactive() const { return active; }
 		inline void activate() {
@@ -54,20 +74,7 @@ namespace Win32GameEngine {
 	class Entity : public GameObject {
 		friend Scene;
 	protected:
-		Entity(Scene *scene) : scene(scene) {
-			add(GameEventType::UPDATE, [&](GameEvent) {
-				for(Component *component : components) {
-					if(component->isactive())
-						component->operator()({ GameEventType::UPDATE });
-				}
-			});
-			add(GameEventType::PAINT, [&](GameEvent) {
-				for(Component *component : components) {
-					if(component->isactive())
-						component->operator()({ GameEventType::PAINT });
-				}
-			});
-		}
+		Entity(Scene *scene) : scene(scene) {}
 		virtual ~Entity() {
 			for(Component *component : components)
 				delete component;
@@ -75,6 +82,12 @@ namespace Win32GameEngine {
 	public:
 		Scene *const scene;
 		set<Component *> components;
+		virtual void propagatedown(GameEvent event) override {
+			for(Component *component : components) {
+				if(component->isactive())
+					component->operator()(event);
+			}
+		}
 		Component *addcomponent(Component *component) {
 			components.insert(component);
 			return component;
@@ -97,20 +110,7 @@ namespace Win32GameEngine {
 	class Scene : public GameObject {
 		friend Game;
 	protected:
-		Scene(Game *game) : GameObject(false), game(game) {
-			add(GameEventType::UPDATE, [&](GameEvent) {
-				for(Entity *entity : entities) {
-					if(entity->isactive())
-						entity->operator()({ GameEventType::UPDATE });
-				}
-			});
-			add(GameEventType::PAINT, [&](GameEvent) {
-				for(Entity *entity : entities) {
-					if(entity->isactive())
-						entity->operator()({ GameEventType::PAINT });
-				}
-			});
-		}
+		Scene(Game *game) : GameObject(false), game(game) {}
 		virtual ~Scene() {
 			for(Entity *entity : entities)
 				delete entity;
@@ -118,6 +118,12 @@ namespace Win32GameEngine {
 	public:
 		Game *const game;
 		set<Entity *> entities;
+		virtual void propagatedown(GameEvent event) override {
+			for(Entity *entity : entities) {
+				if(entity->isactive())
+					entity->operator()(event);
+			}
+		}
 		Entity *addentity(Entity *entity) {
 			entities.insert(entity);
 			return entity;
@@ -137,16 +143,27 @@ namespace Win32GameEngine {
 	public:
 		Window *const window;
 		Bitmap buffer;
+		bool clear_frame_buffer;
 		set<Scene *> scenes;
 		Game(Window *const w) : GameObject(false),
 			hdc(nullptr), window(w),
-			buffer(window->args.size), time(), frame(0)
+			clear_frame_buffer(true), buffer(window->args.size),
+			time(), frame(0)
 		{
-			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
+			// System events redirection
+			for(UINT type : vector<UINT>{ WM_LBUTTONDOWN, WM_MBUTTONDOWN, WM_RBUTTONDOWN }) {
+				window->events.add(type, [&](SystemEvent) {
+					operator()({ GameEventType::MOUSEDOWN, GameEvent::Propagation::DOWN });
+				});
+			}
+			for(UINT type : vector<UINT>{ WM_LBUTTONUP, WM_MBUTTONUP, WM_RBUTTONUP }) {
+				window->events.add(type, [&](SystemEvent) {
+					operator()({ GameEventType::MOUSEUP, GameEvent::Propagation::DOWN });
+				});
+			}
 			window->events.add(WM_PAINT, [&](SystemEvent) {
-				hdc = BeginPaint(window->handle, ps);
-				postpone([&]() { operator()({ GameEventType::PAINT }); });
-				postpone([&]() { EndPaint(window->handle, ps); });
+				operator()({ GameEventType::PAINT, GameEvent::Propagation::DOWN });
+				operator()({ GameEventType::POSTPAINT, GameEvent::Propagation::DOWN });
 			});
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
 				switch(event.data.wParam) {
@@ -162,30 +179,41 @@ namespace Win32GameEngine {
 			});
 			window->events.add(WM_DESTROY, [&](SystemEvent) { inactivate(); });
 			window->events.add(WM_QUIT, [&](SystemEvent) { PostQuitMessage(0); });
+
+			// In-game events logic
 			add(GameEventType::UPDATE, [&](GameEvent) {
+				window->update();
 				if(!time.isup())
 					return;
 				time.tick();
-				for(Scene *scene : scenes) {
-					if(scene->isactive())
-						scene->operator()({ GameEventType::UPDATE });
-				}
+			});
+			add(GameEventType::POSTUPDATE, [&](GameEvent) {
 				if(frame.isup()) {
 					repaint();
 					frame.tick();
 				}
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
-				HDC bdc = buffer.getdc();
-				Vec2I s = buffer.dimension;
-				SelectObject(bdc, window->args.background_brush);
-				Rectangle(bdc, 0, 0, s[0], s[1]);
-				for(Scene *scene : scenes) {
-					if(scene->isactive())
-						scene->operator()({ GameEventType::PAINT });
+				if(clear_frame_buffer) {
+					HDC bdc = buffer.getdc();
+					SelectObject(bdc, GetStockObject(NULL_PEN));
+					SelectObject(bdc, window->args.background_brush);
+					Vec2I s = window->args.size;
+					Rectangle(bdc, 0, 0, s[0], s[1]);
 				}
-				BitBlt(hdc, 0, 0, s[0], s[1], bdc, 0, 0, SRCCOPY);
+				hdc = BeginPaint(window->handle, ps);
 			});
+			add(GameEventType::POSTPAINT, [&](GameEvent) {
+				Vec2I s = buffer.dimension;
+				BitBlt(hdc, 0, 0, s[0], s[1], buffer.getdc(), 0, 0, SRCCOPY);
+				EndPaint(window->handle, ps);
+			});
+		}
+		virtual void propagatedown(GameEvent event) override {
+			for(Scene *scene : scenes) {
+				if(scene->isactive())
+					scene->operator()(event);
+			}
 		}
 		Scene *addscene(Scene *scene) {
 			scenes.insert(scene);
@@ -193,6 +221,11 @@ namespace Win32GameEngine {
 		}
 		inline Scene *makescene() {
 			return addscene(new Scene(this));
+		}
+		void update() {
+			resolve();
+			operator()({ GameEventType::UPDATE, GameEvent::Propagation::DOWN });
+			operator()({ GameEventType::POSTUPDATE, GameEvent::Propagation::DOWN });
 		}
 		void repaint() {
 			InvalidateRect(window->handle, nullptr, true);

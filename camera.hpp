@@ -29,8 +29,8 @@ namespace Win32GameEngine {
 		float pixel_scale;
 		virtual bool compare(Entity const *a, Entity const *b) override {
 			float
-				az = ((WorldEntity const *)a)->transform.position.value[2],
-				bz = ((WorldEntity const *)b)->transform.position.value[2];
+				az = ((WorldEntity const *)a)->transform->position.value[2],
+				bz = ((WorldEntity const *)b)->transform->position.value[2];
 			return az > bz;
 		}
 		virtual bool validate(Entity const *entity) override {
@@ -59,7 +59,7 @@ namespace Win32GameEngine {
 				Texture *const texture = entity->getcomponent<Texture>();
 				SquareMatrix<4, float>camera_entity =
 					((WorldEntity const *)entity)
-					->transform.world.inverse()
+					->transform->world.inverse()
 					.compose(self_transform.world);
 				Bound screenb = texture->bound
 					.transform(

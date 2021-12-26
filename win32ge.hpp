@@ -26,10 +26,8 @@ int WINAPI WIN32ENTRY(
 		return 0;
 	try {
 		game->activate();
-		for(; game->isactive(); ) {
-			game->resolve();
-			game->operator()({ GameEventType::UPDATE });
-		}
+		for(; game->isactive(); )
+			game->update();
 	} catch(ConstString msg) {
 		MessageBox(game->window->handle, msg, L"Error", MB_OK);
 	}

@@ -110,7 +110,6 @@ namespace Win32GameEngine {
 	protected:
 		Bitmap &target;
 		vector<Entity *> queue;
-		bool clear_on_paint;
 		Renderer(Entity *entity) : Component(entity),
 			target(entity->scene->game->buffer),
 			queue(),
@@ -152,9 +151,7 @@ namespace Win32GameEngine {
 			);
 		}
 	public:
-		inline void setclearonpaint(bool b) {
-			clear_on_paint = b;
-		}
+		bool clear_on_paint;
 	};
 }
 

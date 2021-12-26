@@ -17,7 +17,7 @@ namespace Win32GameEngine {
 			return true;
 		}
 		virtual bool compare(Entity const *a, Entity const *b) override {
-			return ((ScreenEntity *)a)->transform.z.value < ((ScreenEntity *)b)->transform.z.value;
+			return ((ScreenEntity *)a)->transform->z.value < ((ScreenEntity *)b)->transform->z.value;
 		}
 		virtual void sample() override {
 			for(Entity *const entity : queue) {
@@ -26,7 +26,7 @@ namespace Win32GameEngine {
 				Bound bound = texture->bound.transform([&](Vec2F v) {
 					Vec3F a = v;
 					a[2] = 1;
-					return se->transform.world(a);
+					return se->transform->world(a);
 				});
 				texture->put(target.getdc(), bound);
 			}
