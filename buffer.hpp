@@ -53,14 +53,21 @@ namespace Win32GameEngine {
 	};
 
 	struct Bitmap : Buffer<Color, Vec2I> {
+	protected:
+		HBITMAP handle;
+		HDC hdc;
+	public:
 		Vec2U const dimension;
-		HBITMAP handle = nullptr;
-		Bitmap(Vec2U dimension, shared_ptr<Color> data) :
-			Buffer<Color, Vec2I>(dimension[0] * dimension[1], data), dimension(dimension) {}
+		Bitmap(Vec2U dimension, shared_ptr<Color> data) : Buffer<Color, Vec2I>(dimension[0] * dimension[1], data),
+			dimension(dimension),
+			handle(nullptr),
+			hdc(nullptr) {
+		}
 		Bitmap(Vec2U dimension) : Bitmap(dimension, shared_ptr<Color>(new Color[dimension[0] * dimension[1]])) {}
 		Bitmap(Bitmap const &bitmap) : Bitmap(bitmap.dimension, bitmap.data) {}
 		~Bitmap() {
 			handle && DeleteObject(handle);
+			hdc && DeleteDC(hdc);
 		}
 		static Bitmap fromfile(ConstString url) {
 			File file(url);
@@ -92,9 +99,19 @@ namespace Win32GameEngine {
 			return bitmap;
 		}
 		HBITMAP gethandle() {
-			handle && DeleteObject(handle);
-			handle = CreateBitmap(dimension[0], dimension[1], 1U, 32U, data.get());
+			if(!handle) {
+				handle = CreateBitmap(
+					dimension[0], dimension[1], 1U, 32U, data.get()
+				);
+			}
 			return handle;
+		}
+		HDC getdc() {
+			if(!hdc) {
+				hdc = CreateCompatibleDC(NULL);
+				SelectObject(hdc, gethandle());
+			}
+			return hdc;
 		}
 		virtual unsigned locate(Vec2I index) const override {
 			return index.at(1) * dimension.at(0) + index.at(0);

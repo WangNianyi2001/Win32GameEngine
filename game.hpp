@@ -46,7 +46,7 @@ namespace Win32GameEngine {
 	public:
 		Entity *const entity;
 		template<derived_from<Component> T>
-		inline T *be() const {
+		inline T *as() const {
 			return dynamic_cast<T *>(const_cast<Component *>(this));
 		}
 	};
@@ -86,7 +86,7 @@ namespace Win32GameEngine {
 		template<derived_from<Component> T>
 		T *getcomponent() const {
 			for(Component *component : components) {
-				T *t = component->be<T>();
+				T *t = component->as<T>();
 				if(t)
 					return t;
 			}
@@ -145,9 +145,7 @@ namespace Win32GameEngine {
 			add(GameEventType::UPDATE, [&](GameEvent) { window->update(); });
 			window->events.add(WM_PAINT, [&](SystemEvent) {
 				hdc = BeginPaint(window->handle, ps);
-				postpone([&]() {
-					operator()({ GameEventType::PAINT });
-				});
+				postpone([&]() { operator()({ GameEventType::PAINT }); });
 				postpone([&]() { EndPaint(window->handle, ps); });
 			});
 			window->events.add(WM_SYSCOMMAND, [&](SystemEvent event) {
@@ -178,10 +176,15 @@ namespace Win32GameEngine {
 				}
 			});
 			add(GameEventType::PAINT, [&](GameEvent) {
+				HDC bdc = buffer.getdc();
+				Vec2I s = buffer.dimension;
+				SelectObject(bdc, window->args.background_brush);
+				Rectangle(bdc, 0, 0, s[0], s[1]);
 				for(Scene *scene : scenes) {
 					if(scene->isactive())
 						scene->operator()({ GameEventType::PAINT });
 				}
+				BitBlt(hdc, 0, 0, s[0], s[1], bdc, 0, 0, SRCCOPY);
 			});
 		}
 		Scene *addscene(Scene *scene) {
@@ -191,11 +194,13 @@ namespace Win32GameEngine {
 		inline Scene *makescene() {
 			return addscene(new Scene(this));
 		}
-		inline HDC gethdc() const { return hdc; }
 		void repaint() {
-			InvalidateRect(window->handle, nullptr, false);
+			InvalidateRect(window->handle, nullptr, true);
 		}
 		void setupdaterate(ULONGLONG rate) { time.setrate(rate); }
 		void setfps(ULONGLONG fps) { this->frame.setrate(fps ? 1000 / fps : 0); }
 	};
 }
+
+#include "transform.hpp"
+#include "render.hpp"

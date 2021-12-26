@@ -1,11 +1,10 @@
 #pragma once
 
+#include "game.hpp"
 #include "render.hpp"
-#include "world.hpp"
 
 namespace Win32GameEngine {
 	class Camera : public Renderer {
-	protected:
 		static Vec2F screen_texture(
 			SquareMatrix<4, float> const &camera_entity, Vec2F screenp
 		) {
@@ -28,60 +27,21 @@ namespace Win32GameEngine {
 		}
 		Vec2I buffer_shift;
 		float pixel_scale;
-		bool compare(Entity const *a, Entity const *b) {
+		virtual bool compare(Entity const *a, Entity const *b) override {
 			float
 				az = ((WorldEntity const *)a)->transform.position.value[2],
 				bz = ((WorldEntity const *)b)->transform.position.value[2];
 			return az > bz;
 		}
-		static bool validate(Entity const *entity) {
+		virtual bool validate(Entity const *entity) override {
 			if(!entity->isactive())
 				return false;
-			WorldEntity const *world = dynamic_cast<WorldEntity const *>(entity);
-			if(!world)
+			if(!dynamic_cast<WorldEntity const *>(entity))
 				return false;
 			Texture *const texture = entity->getcomponent<Texture>();
 			if(!texture || !texture->isactive())
 				return false;
 			return true;
-		}
-		vector<Entity *> queue;
-	public:
-		Camera(Entity *entity, float view_size) : Renderer(entity),
-			queue() {
-			buffer_shift = Vec2F(target.dimension) * .5f;
-			setviewsize(view_size);
-			add(GameEventType::PAINT, [=](GameEvent) {
-				Scene *scene = entity->scene;
-				// Sort solid entities by Z-order.
-				queue.clear();
-				copy_if(
-					scene->entities.begin(),
-					scene->entities.end(),
-					back_inserter(queue),
-					validate
-				);
-				sort(
-					queue.begin(), queue.end(),
-					bind(&Camera::compare, this, placeholders::_1, placeholders::_2)
-				);
-				// Perform rendering action.
-				clear();
-				sample();
-				// Transfer onto device context.
-				HDC hdc = scene->game->gethdc();
-				HDC com = CreateCompatibleDC(hdc);
-				SelectObject(com, target.gethandle());
-				BitBlt(hdc, 0, 0, target.dimension[0], target.dimension[1], com, 0, 0, SRCCOPY);
-				DeleteObject(com);
-			});
-		}
-		inline float setviewsize(float view_size) {
-			return pixel_scale = view_size / target.dimension.module();
-		}
-		inline float setfov(float fov) { setviewsize(tan(fov)); }
-		inline float setfovindegree(int fov) {
-			setviewsize((float)tan(fov * (atan(1) / 90)));
 		}
 		inline Vec2I screen_buffer(Vec2F screenp) const {
 			return screenp * (1 / pixel_scale) + buffer_shift;
@@ -90,7 +50,7 @@ namespace Win32GameEngine {
 			return (bufferp - buffer_shift) * pixel_scale;
 		}
 		virtual void sample() override {
-			Transform &self_transform = *entity->getcomponent<Transform>();
+			WorldTransform &self_transform = *entity->getcomponent<WorldTransform>();
 			RectBound screen_clip{
 				buffer_screen({ 0, 0 }),
 				buffer_screen(target.dimension)
@@ -122,6 +82,18 @@ namespace Win32GameEngine {
 					}
 				}
 			}
+		}
+	public:
+		Camera(Entity *entity, float view_size) : Renderer(entity),
+			buffer_shift(Vec2F(target.dimension) * .5f) {
+			setviewsize(view_size);
+		}
+		inline float setviewsize(float view_size) {
+			return pixel_scale = view_size / target.dimension.module();
+		}
+		inline float setfov(float fov) { setviewsize(tan(fov)); }
+		inline float setfovindegree(int fov) {
+			setviewsize((float)tan(fov * (atan(1) / 90)));
 		}
 	};
 
