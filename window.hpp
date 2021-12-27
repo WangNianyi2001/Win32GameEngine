@@ -10,7 +10,7 @@ namespace Win32GameEngine {
 	};
 	struct SystemEvent : Event<UINT> {
 		SystemEventData data;
-		inline LRESULT def() {
+		inline LRESULT def() const {
 			return DefWindowProc(data.handle, type, data.w, data.l);
 		}
 	};
@@ -19,7 +19,7 @@ namespace Win32GameEngine {
 	class Window {
 	public:
 		struct Distributor : EventDistributor<SystemEvent, LRESULT> {
-			virtual inline LRESULT miss(SystemEvent event) override {
+			virtual inline LRESULT miss(SystemEvent const &event) override {
 				return event.def();
 			}
 		};
@@ -59,7 +59,7 @@ namespace Win32GameEngine {
 	public:
 		HWND handle;
 		Bitmap buffer;
-		Window(InitArg const args) : args(args), buffer(args.size) {
+		Window(InitArg const args) : args(args), handle(NULL), buffer(args.size) {
 			if(!args.dpi_aware)
 				SetProcessDPIAware();
 			WNDCLASS window_class = {

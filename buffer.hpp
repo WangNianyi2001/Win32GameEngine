@@ -31,6 +31,10 @@ namespace Win32GameEngine {
 		}
 	};
 
+	static inline BLENDFUNCTION blend_function = {
+		AC_SRC_OVER, 0, 255, AC_SRC_ALPHA
+	};
+
 	struct Color {
 		using Channel = unsigned __int8;
 		Channel b, g, r, a;
@@ -98,20 +102,35 @@ namespace Win32GameEngine {
 			}
 			return bitmap;
 		}
+		void renewhandle() {
+			handle && DeleteObject(handle);
+			handle = CreateBitmap(
+				dimension[0], dimension[1], 1U, 32U, data.get()
+			);
+		}
 		HBITMAP gethandle() {
-			if(!handle) {
-				handle = CreateBitmap(
-					dimension[0], dimension[1], 1U, 32U, data.get()
-				);
-			}
+			if(!handle)
+				renewhandle();
 			return handle;
 		}
+		void renewdc() {
+			hdc && DeleteDC(hdc);
+			hdc = CreateCompatibleDC(nullptr);
+			SelectObject(hdc, gethandle());
+		}
 		HDC getdc() {
-			if(!hdc) {
-				hdc = CreateCompatibleDC(NULL);
-				SelectObject(hdc, gethandle());
-			}
+			if(!hdc)
+				renewdc();
 			return hdc;
+		}
+		void put(HDC dest) {
+			AlphaBlend(
+				dest,
+				0, 0, dimension[0], dimension[1],
+				getdc(),
+				0, 0, dimension[0], dimension[1],
+				blend_function
+			);
 		}
 		virtual unsigned locate(Vec2I index) const override {
 			return index.at(1) * dimension.at(0) + index.at(0);

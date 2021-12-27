@@ -5,9 +5,11 @@
 
 namespace Win32GameEngine {
 	class Camera : public Renderer {
-		static Vec2F screen_texture(
-			SquareMatrix<4, float> const &camera_entity, Vec2F screenp
-		) {
+	protected:
+		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) override {
+			SquareMatrix<4, float> camera_entity = ((WorldEntity const *)texture->entity)
+				->transform.world.inverse()
+				.compose(entity->getcomponent<WorldTransform>()->world);
 			Vec4F top = screenp;
 			top[2] = 1;
 			Vec4F bottom{ 0, 0, 0, 1 };
@@ -51,10 +53,6 @@ namespace Win32GameEngine {
 		}
 		virtual void sample() override {
 			WorldTransform &self_transform = *entity->getcomponent<WorldTransform>();
-			Bound screen_clip{
-				buffer_screen({ 0, 0 }),
-				buffer_screen(target().dimension)
-			};
 			for(Entity *const entity : queue) {
 				Texture *const texture = entity->getcomponent<Texture>();
 				SquareMatrix<4, float>camera_entity =
@@ -64,7 +62,7 @@ namespace Win32GameEngine {
 				Bound screenb = texture->bound
 					.transform(
 						bind_front(texture_screen, camera_entity.inverse())
-					).clip(screen_clip);
+					);
 				float const
 					ymin = screenb.min[1],
 					ymax = screenb.max[1],
@@ -72,13 +70,15 @@ namespace Win32GameEngine {
 					xmax = screenb.max[0];
 				for(float y = ymin; y < ymax; y += pixel_scale) {
 					for(float x = xmin; x < xmax; x += pixel_scale) {
-						Vec2F screenp{ x, y };
-						Color *pixel = target().at(screen_buffer(screenp));
+						Vec2F screenp{ x, y }, bufferp = screen_buffer(screenp);
+						Color *pixel = buffer.at(bufferp);
 						if(!pixel)
 							continue;
-						Vec2F texturep = screen_texture(camera_entity, screenp);
-						if(texture->hit(texturep))
+						Vec2F texturep = screen_texture(texture, screenp);
+						if(texture->hit(texturep)) {
 							*pixel = *pixel + texture->sample(texturep);
+							int a = 1;
+						}
 					}
 				}
 			}
@@ -88,11 +88,8 @@ namespace Win32GameEngine {
 			buffer_shift(Vec2F(target().dimension) * .5f) {
 			setviewsize(view_size);
 		}
-		virtual Entity *cast(Vec2F) override {
-			return nullptr;
-		}
 		inline float setviewsize(float view_size) {
-			return pixel_scale = view_size / target().dimension.module();
+			return pixel_scale = view_size / buffer.dimension.module();
 		}
 		inline float setfov(float fov) { setviewsize(tan(fov)); }
 		inline float setfovindegree(int fov) {

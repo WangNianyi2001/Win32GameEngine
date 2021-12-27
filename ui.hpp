@@ -6,10 +6,17 @@
 namespace Win32GameEngine {
 	class UI : public Renderer {
 	protected:
+		set<ScreenEntity *> elements;
+		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) override {
+			ScreenTransform tt = ((ScreenEntity *)texture->entity)->transform;
+			Vec3F aug = screenp;
+			aug[2] = 1;
+			return tt.world.inverse()(aug);
+		}
 		virtual bool validate(Entity const *entity) override {
 			if(!entity->isactive())
 				return false;
-			if(!dynamic_cast<ScreenEntity const *>(entity))
+			if(elements.find((ScreenEntity *)entity) == elements.end())
 				return false;
 			Texture *const texture = entity->getcomponent<Texture>();
 			if(!texture || !texture->isactive())
@@ -28,13 +35,16 @@ namespace Win32GameEngine {
 					a[2] = 1;
 					return se->transform.world(a);
 				});
-				texture->put(target().getdc(), bound);
+				texture->put(buffer, bound);
+				GetBitmapBits(buffer.gethandle(), buffer.size * sizeof(Color), buffer.data.get());
 			}
 		}
 	public:
 		UI(Entity *entity) : Renderer(entity) {}
-		virtual Entity *cast(Vec2F) override {
-			return nullptr;
+		ScreenEntity *makeelement() {
+			ScreenEntity *el = new ScreenEntity(entity->scene);
+			elements.insert(el);
+			return el;
 		}
 	};
 

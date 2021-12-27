@@ -42,6 +42,12 @@ namespace Win32GameEngine {
 			res.max[1] = std::min(r.max[1], max[1]);
 			return res;
 		}
+		inline bool in(Vec2F p) const {
+			return (
+				p[0] >= min[0] && p[1] >= min[1] &&
+				p[0] <= max[0] && p[1] <= max[1]
+			);
+		}
 	};
 
 	class Texture : public Component {
@@ -56,29 +62,33 @@ namespace Win32GameEngine {
 			anchor = a;
 			bound = Bound(a * -1, size - a);
 		}
-		virtual bool hit(Vec2F uv) const {
-			float x = uv[0], y = uv[1];
-			return (x < bound.max[0]) && (x >= bound.min[0]) && (y < bound.max[1]) && (y >= bound.min[1]);
-		}
+		inline bool hit(Vec2F uv) const { return bound.in(uv); }
 		virtual Color sample(Vec2F uv) const = 0;
-		virtual void put(HDC hdc, Bound bound) = 0;
+		virtual void put(Bitmap &bitmap, Bound bound) = 0;
 	};
 
 	class ColorBox : public Texture {
-	public:
+		Bitmap pixel;
 		Color color;
+	public:
 		ColorBox(Entity *entity, Color color, Vec2F size, Vec2F anchor) :
-			Texture(entity, size, anchor), color(color) {
+			Texture(entity, size, anchor), color(color), pixel({ 1, 1 }) {
+			*pixel.data.get() = color;
+			pixel.renewhandle();
+			pixel.renewdc();
 		}
 		ColorBox(Entity *entity, Color color, Vec2F size) : ColorBox(entity, color, size, size * .5f) {}
 		inline virtual Color sample(Vec2F uv) const override { return color; }
-		virtual void put(HDC hdc, Bound bound) override {
-			// TODO
+		virtual void put(Bitmap &dest, Bound bound) override {
+			Vec2I pos = bound.topleft(), size = bound.bottomright() - pos;
+			AlphaBlend(
+				dest.getdc(),
+				pos[0], pos[1], size[0], size[1],
+				pixel.getdc(),
+				0, 0, 1, 1,
+				blend_function
+			);
 		}
-	};
-
-	static inline BLENDFUNCTION blend_function = {
-		AC_SRC_OVER, 0, 255, AC_SRC_ALPHA
 	};
 
 	class Sprite : public Texture {
@@ -94,10 +104,10 @@ namespace Win32GameEngine {
 				return Color();
 			return *color;
 		}
-		virtual void put(HDC hdc, Bound bound) override {
+		virtual void put(Bitmap &dest, Bound bound) override {
 			Vec2I pos = bound.topleft(), size = bound.bottomright() - pos;
 			AlphaBlend(
-				hdc,
+				dest.getdc(),
 				pos[0], pos[1], size[0], size[1],
 				bitmap.getdc(),
 				0, 0, bitmap.dimension[0], bitmap.dimension[1],
@@ -108,13 +118,17 @@ namespace Win32GameEngine {
 
 	class Renderer : public Component {
 	protected:
+		Bitmap &buffer;
 		inline Bitmap &target() {
 			return entity->scene->game->window->buffer;
 		}
 		vector<Entity *> queue;
 		Renderer(Entity *entity) : Component(entity),
 			queue(),
-			clear_on_paint(false) {
+			clear_on_paint(true),
+			buffer(*new Bitmap(target().dimension)),
+			order(0)
+		{
 			add(GameEventType::PAINT, [=](GameEvent) {
 				Scene *scene = entity->scene;
 				queue.clear();
@@ -131,31 +145,40 @@ namespace Win32GameEngine {
 				if(clear_on_paint)
 					clear();
 				sample();
-				transfer();
+				buffer.renewhandle();
+				buffer.renewdc();
+				buffer.put(target().getdc());
 			});
 			add(GameEventType::MOUSEDOWN, [=](GameEvent) {
-				int a = 1;
+				Entity *hit = cast(entity->scene->game->mouse.position);
+				if(!hit)
+					return;
+				hit->operator()({ GameEventType::CLICK, Propagation::UP });
 			});
 		}
+		~Renderer() {
+			delete &buffer;
+		}
+		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) = 0;
 		virtual bool validate(Entity const *entity) = 0;
 		virtual bool compare(Entity const *a, Entity const *b) = 0;
 		inline void clear() {
-			memset(target().data.get(), 0, target().size * sizeof(Color));
+			memset(buffer.data.get(), 0, buffer.size * sizeof(Color));
 		}
 		virtual void sample() = 0;
-		void transfer() {
-			Bitmap &buffer = entity->scene->game->window->buffer;
-			Vec2I bs = buffer.dimension, s = target().dimension;
-			AlphaBlend(
-				buffer.getdc(),
-				0, 0, bs[0], bs[1],
-				target().getdc(),
-				0, 0, s[0], s[1],
-				blend_function
-			);
-		}
 	public:
-		virtual Entity *cast(Vec2F screenp) = 0;
+		unsigned order;
+		virtual Entity *cast(Vec2F screenp) {
+			for(Entity *target : entity->scene->entities) {
+				if(!validate(target))
+					continue;
+				Texture *texture = target->getcomponent<Texture>();
+				Vec2F texturep = screen_texture(texture, entity->scene->game->mouse.position);
+				if(texture->bound.in(texturep))
+					return target;
+			}
+			return nullptr;
+		}
 		bool clear_on_paint;
 	};
 }

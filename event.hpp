@@ -35,7 +35,7 @@ namespace Win32GameEngine {
 		Receiver() {
 			postponeds = vector<Postponed>();
 		}
-		virtual Ret operator()(Event event) = 0;
+		virtual Ret operator()(Event const &event) = 0;
 		void postpone(function<void()> action, time_t time = 0) {
 			Postponed postponed{ action, time };
 			postponeds.push_back(postponed);
@@ -55,9 +55,9 @@ namespace Win32GameEngine {
 
 	template<derived_from_template<Event> Event, typename Ret = void>
 	struct Handler : Receiver<Event, Ret> {
-		using Function = function<Ret(Event)>;
+		using Function = function<Ret(Event const &)>;
 		Function f;
-		virtual inline Ret operator()(Event event) override {
+		virtual inline Ret operator()(Event const &event) override {
 			return f(event);
 		}
 		Handler(Function f) : f(f) {}
@@ -81,14 +81,14 @@ namespace Win32GameEngine {
 					delete receiver;
 			}
 		}
-		virtual Ret miss(Event) {
+		virtual Ret miss(Event const &) {
 			if constexpr(is_same_v<Ret, void>);
 			else
 				return Ret();
 		}
-		inline virtual void propagateup(Event event) {}
-		inline virtual void propagatedown(Event event) {}
-		void propagate(Event event) {
+		inline virtual void propagateup(Event const &event) {}
+		inline virtual void propagatedown(Event const &event) {}
+		void propagate(Event const &event) {
 			switch(event.propagation) {
 			case Propagation::UP:
 				propagateup(event);
@@ -98,7 +98,7 @@ namespace Win32GameEngine {
 				break;
 			}
 		}
-		virtual Ret operator()(Event event) override {
+		virtual Ret operator()(Event const &event) override {
 			auto it = receivers.find(event.type);
 			if constexpr(is_same_v<Ret, void>) {
 				if(it == receivers.end())
