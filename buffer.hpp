@@ -64,8 +64,8 @@ namespace Win32GameEngine {
 		Vec2U const dimension;
 		Bitmap(Vec2U dimension, shared_ptr<Color> data) : Buffer<Color, Vec2I>(dimension[0] * dimension[1], data),
 			dimension(dimension),
-			handle(nullptr),
-			hdc(nullptr) {
+			handle(NULL),
+			hdc(NULL) {
 		}
 		Bitmap(Vec2U dimension) : Bitmap(dimension, shared_ptr<Color>(new Color[dimension[0] * dimension[1]])) {}
 		Bitmap(Bitmap const &bitmap) : Bitmap(bitmap.dimension, bitmap.data) {}
@@ -115,7 +115,7 @@ namespace Win32GameEngine {
 		}
 		void renewdc() {
 			hdc && DeleteDC(hdc);
-			hdc = CreateCompatibleDC(nullptr);
+			hdc = CreateCompatibleDC(NULL);
 			SelectObject(hdc, gethandle());
 		}
 		HDC getdc() {

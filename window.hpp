@@ -29,11 +29,11 @@ namespace Win32GameEngine {
 		};
 		struct InitArg {
 			ConstString class_name = L"Window";
-			HINSTANCE instance = nullptr;
+			HINSTANCE instance = NULL;
 			ConstString title = nullptr;
 			UINT class_style = CS_HREDRAW | CS_VREDRAW;
-			HICON icon = nullptr, icon_small = nullptr;
-			HCURSOR cursor = nullptr;
+			HICON icon = NULL, icon_small = NULL;
+			HCURSOR cursor = NULL;
 			HBRUSH background_brush = (HBRUSH)GetStockObject(BLACK_BRUSH);
 			ConstString menu_name = nullptr;
 			Vec2I position{ CW_USEDEFAULT, CW_USEDEFAULT };
@@ -79,7 +79,7 @@ namespace Win32GameEngine {
 				args.class_name, args.title, WS_POPUP,
 				args.position.at(0), args.position.at(1),
 				args.size.at(0), args.size.at(1),
-				nullptr, nullptr, nullptr, args.instance
+				NULL, NULL, NULL, args.instance
 			);
 			handles.insert(pair(handle, this));
 		}
@@ -97,14 +97,14 @@ namespace Win32GameEngine {
 		}
 		void update() {
 			MSG message;
-			while(PeekMessage(&message, nullptr, 0, 0, PM_REMOVE)) {
+			while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
 				TranslateMessage(&message);
 				DispatchMessage(&message);
 			}
 		}
 		void fullscreen() {
 			args.size = screen;
-			SetWindowPos(handle, nullptr, 0, 0, screen[0], screen[1], SWP_SHOWWINDOW);
+			SetWindowPos(handle, NULL, 0, 0, screen[0], screen[1], SWP_SHOWWINDOW);
 		}
 		void center() {
 			Vec2I pos = (screen - args.size) * .5f;

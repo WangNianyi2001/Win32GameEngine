@@ -144,12 +144,10 @@ namespace Win32GameEngine {
 			Vec2F position;
 		} mouse;
 		Game(Window *window) : GameObject(false),
-			window(window),
+			paint_dc(NULL), window(window),
 			clear_frame_buffer(true),
 			time(), frame(0),
-			mouse({
-				{ nanf(nullptr), nanf(nullptr) }
-			})
+			mouse({ { 0, 0 } })
 		{
 			// System events redirection
 			window->events.add(WM_LBUTTONDOWN, [=](SystemEvent const &event) {
