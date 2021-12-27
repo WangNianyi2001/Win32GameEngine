@@ -7,12 +7,21 @@ namespace Win32GameEngine {
 	class UI : public Renderer {
 	protected:
 		set<ScreenEntity *> elements;
-		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) override {
-			ScreenTransform tt = ((ScreenEntity *)texture->entity)->transform;
+
+		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) const override {
+			ScreenTransform &tt = ((ScreenEntity *)texture->entity)->transform;
 			Vec3F aug = screenp;
 			aug[2] = 1;
 			return tt.world.inverse()(aug);
 		}
+		virtual Vec2F texture_screen(Texture const *texture, Vec2F texturep) const {
+			ScreenTransform &tt = ((ScreenEntity *)texture->entity)->transform;
+			Vec3F aug = texturep;
+			aug[2] = 1;
+			return tt.world(aug);
+		}
+		virtual Vec2F buffer_screen(Vec2I screenp) const { return screenp; }
+		virtual Vec2I screen_buffer(Vec2F bufferp) const { return bufferp; }
 		virtual bool validate(Entity const *entity) override {
 			if(!entity->isactive())
 				return false;

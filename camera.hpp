@@ -6,7 +6,7 @@
 namespace Win32GameEngine {
 	class Camera : public Renderer {
 	protected:
-		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) override {
+		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) const override {
 			SquareMatrix<4, float> camera_entity = ((WorldEntity const *)texture->entity)
 				->transform.world.inverse()
 				.compose(entity->getcomponent<WorldTransform>()->world);
@@ -19,9 +19,13 @@ namespace Win32GameEngine {
 			top = top * z + bottom;
 			return camera_entity(top);
 		}
-		static Vec2F texture_screen(
-			SquareMatrix<4, float> const &entity_camera, Vec2F texturep
-		) {
+		virtual Vec2F texture_screen(
+			Texture const *texture, Vec2F texturep 
+		) const override {
+			SquareMatrix<4, float> entity_camera = ((WorldEntity const *)texture->entity)
+				->transform.world.inverse()
+				.compose(entity->getcomponent<WorldTransform>()->world);
+			entity_camera = entity_camera.inverse();
 			Vec4F augmented = texturep;
 			augmented[3] = 1;
 			Vec4F camerap = entity_camera(augmented);
@@ -45,10 +49,10 @@ namespace Win32GameEngine {
 				return false;
 			return true;
 		}
-		inline Vec2I screen_buffer(Vec2F screenp) const {
+		virtual inline Vec2I screen_buffer(Vec2F screenp) const override {
 			return screenp * (1 / pixel_scale) + buffer_shift;
 		}
-		inline Vec2F buffer_screen(Vec2I bufferp) const {
+		virtual inline Vec2F buffer_screen(Vec2I bufferp) const override {
 			return (bufferp - buffer_shift) * pixel_scale;
 		}
 		virtual void sample() override {
@@ -59,10 +63,9 @@ namespace Win32GameEngine {
 					((WorldEntity const *)entity)
 					->transform.world.inverse()
 					.compose(self_transform.world);
-				Bound screenb = texture->bound
-					.transform(
-						bind_front(texture_screen, camera_entity.inverse())
-					);
+				Bound screenb = texture->bound.transform([=](Vec2F texturep) {
+					return texture_screen(texture, texturep);
+				});
 				float const
 					ymin = screenb.min[1],
 					ymax = screenb.max[1],

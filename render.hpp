@@ -159,7 +159,16 @@ namespace Win32GameEngine {
 		~Renderer() {
 			delete &buffer;
 		}
-		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) = 0;
+		virtual Vec2F screen_texture(Texture const *texture, Vec2F screenp) const = 0;
+		virtual Vec2F texture_screen(Texture const *texture, Vec2F texturep) const = 0;
+		virtual Vec2F buffer_screen(Vec2I screenp) const = 0;
+		virtual Vec2I screen_buffer(Vec2F bufferp) const = 0;
+		inline Vec2F buffer_texture(Texture const *texture, Vec2I bufferp) const {
+			return screen_texture(texture, buffer_screen(bufferp));
+		}
+		inline Vec2I texture_buffer(Texture const *texture, Vec2F texturep) const {
+			return screen_buffer(texture_screen(texture, texturep));
+		}
 		virtual bool validate(Entity const *entity) = 0;
 		virtual bool compare(Entity const *a, Entity const *b) = 0;
 		inline void clear() {
@@ -168,12 +177,12 @@ namespace Win32GameEngine {
 		virtual void sample() = 0;
 	public:
 		unsigned order;
-		virtual Entity *cast(Vec2F screenp) {
+		virtual Entity *cast(Vec2F bufferp) {
 			for(Entity *target : entity->scene->entities) {
 				if(!validate(target))
 					continue;
 				Texture *texture = target->getcomponent<Texture>();
-				Vec2F texturep = screen_texture(texture, entity->scene->game->mouse.position);
+				Vec2F texturep = buffer_texture(texture, bufferp);
 				if(texture->bound.in(texturep))
 					return target;
 			}
